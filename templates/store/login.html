@@ -1,0 +1,28 @@
+{% extends "store/auth_base.html" %}
+
+{% block title %}Login{% endblock %}
+{% block eyebrow %}Welcome back{% endblock %}
+{% block heading %}Login{% endblock %}
+{% block intro %}Sign in and get back to the shop.{% endblock %}
+
+{% block content %}
+  <form class="auth__form" method="post" action="{% url 'store:login' %}">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if form.non_field_errors %}
+      <p class="auth__error" role="alert">{{ form.non_field_errors.0 }}</p>
+    {% endif %}
+    <div class="auth__field">
+      <label for="{{ form.username.id_for_label }}">Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}<span class="auth__error">{{ form.username.errors.0 }}</span>{% endif %}
+    </div>
+    <div class="auth__field">
+      <label for="{{ form.password.id_for_label }}">Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}<span class="auth__error">{{ form.password.errors.0 }}</span>{% endif %}
+    </div>
+    <button class="auth__submit" type="submit">Login</button>
+  </form>
+  <p class="auth__switch">New here? <a href="{% url 'store:register' %}">Create an account</a></p>
+{% endblock %}

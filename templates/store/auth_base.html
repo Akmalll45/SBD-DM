@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Account{% endblock %} | Hendra Sport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+  <main class="auth">
+    <section class="auth__card">
+      <a class="auth__brand" href="{% url 'store:home' %}">
+        <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Hendra Sport">
+      </a>
+      <p class="auth__eyebrow">{% block eyebrow %}{% endblock %}</p>
+      <h1 class="auth__title">{% block heading %}{% endblock %}</h1>
+      <p class="auth__intro">{% block intro %}{% endblock %}</p>
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</body>
+</html>

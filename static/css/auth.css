@@ -1,0 +1,158 @@
+:root {
+  --color-ink: #111111;
+  --color-muted: #686868;
+  --color-line: #e6e6e6;
+  --color-paper: #f6f6f4;
+  --color-volt: #c8f531;
+  --font-heading: "Barlow Condensed", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-family: var(--font-body);
+}
+
+a {
+  color: inherit;
+}
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+}
+
+.auth__card {
+  width: min(440px, 100%);
+  padding: 48px 40px 40px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+}
+
+.auth__brand {
+  display: block;
+  width: 120px;
+  margin-bottom: 36px;
+}
+
+.auth__brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.auth__eyebrow {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.auth__title {
+  margin: 0 0 12px;
+  font-family: var(--font-heading);
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.auth__intro {
+  margin: 0 0 28px;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth__form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth__field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth__field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  background: #fff;
+  color: var(--color-ink);
+  font: inherit;
+  outline: none;
+}
+
+.auth__field input:focus {
+  border-color: var(--color-ink);
+}
+
+.auth__error {
+  display: block;
+  margin: 6px 0 0;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.auth__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-volt);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.auth__submit:hover {
+  filter: brightness(0.96);
+}
+
+.auth__switch {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.auth__switch a {
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .auth__card {
+    padding: 32px 22px;
+  }
+
+  .auth__title {
+    font-size: 42px;
+  }
+}

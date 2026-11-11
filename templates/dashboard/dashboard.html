@@ -1,0 +1,200 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Overview Analytics{% endblock %}
+{% block page_title %}Dashboard Analytics{% endblock %}
+
+{% block admin_content %}
+<!-- Analytics Metric Cards -->
+<div class="metrics-grid">
+  <!-- 1. Total Revenue -->
+  <div class="metric-card metric-card--accent">
+    <div class="metric-card__header">
+      <span class="metric-card__title">Total Pendapatan</span>
+      <div class="metric-icon-box">
+        <i data-lucide="wallet"></i>
+      </div>
+    </div>
+    <div class="metric-card__value">Rp {{ total_revenue|floatformat:0 }}</div>
+    <div class="metric-card__sub">Dari pesanan aktif & terbayar</div>
+  </div>
+
+  <!-- 2. Total Orders -->
+  <div class="metric-card">
+    <div class="metric-card__header">
+      <span class="metric-card__title">Total Pesanan</span>
+      <div class="metric-icon-box">
+        <i data-lucide="shopping-cart"></i>
+      </div>
+    </div>
+    <div class="metric-card__value">{{ total_orders }}</div>
+    <div class="metric-card__sub">
+      <span style="color: var(--admin-warning);">{{ pending_orders }} Pending</span> &bull; 
+      <span style="color: var(--admin-success);">{{ paid_orders }} Paid</span> &bull; 
+      <span>{{ shipped_orders }} Shipped</span>
+    </div>
+  </div>
+
+  <!-- 3. Sablon Production (High-Margin Core Metric) -->
+  <div class="metric-card metric-card--sablon">
+    <div class="metric-card__header">
+      <span class="metric-card__title">Jersey Custom Sablon</span>
+      <div class="metric-icon-box" style="color: var(--admin-sablon);">
+        <i data-lucide="sparkles"></i>
+      </div>
+    </div>
+    <div class="metric-card__value" style="color: var(--admin-sablon);">{{ total_sablon_orders }}</div>
+    <div class="metric-card__sub">
+      Est. Omset Sablon: <strong>Rp {{ sablon_revenue_est|floatformat:0 }}</strong>
+    </div>
+  </div>
+
+  <!-- 4. Registered Customers -->
+  <div class="metric-card metric-card--success">
+    <div class="metric-card__header">
+      <span class="metric-card__title">Member Terdaftar</span>
+      <div class="metric-icon-box" style="color: var(--admin-success);">
+        <i data-lucide="users"></i>
+      </div>
+    </div>
+    <div class="metric-card__value">{{ total_customers }}</div>
+    <div class="metric-card__sub">{{ total_products }} Produk aktif di etalase</div>
+  </div>
+</div>
+
+<!-- Two-Column Layout: Recent Orders & Low Stock Alerts -->
+<div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 24px;">
+  <!-- Recent Orders Card -->
+  <div class="admin-card">
+    <div class="admin-card__header">
+      <h3 class="admin-card__title">
+        <i data-lucide="receipt" style="width: 20px; vertical-align: middle;"></i>
+        Pesanan Terbaru
+      </h3>
+      <a href="{% url 'dashboard:order_list' %}" class="btn-admin btn-admin--outline btn-admin--sm">
+        Lihat Semua Pesanan <i data-lucide="arrow-right" style="width: 14px;"></i>
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Pelanggan</th>
+            <th>Item & Sablon</th>
+            <th>Total Tagihan</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+            <tr>
+              <td>
+                <a href="{% url 'dashboard:order_detail' order.id %}" style="font-weight: 700; color: var(--admin-accent);">
+                  #{{ order.id }}
+                </a>
+              </td>
+              <td>
+                <strong>{{ order.full_name }}</strong>
+                <div style="font-size: 0.75rem; color: var(--admin-text-muted);">{{ order.city }}</div>
+              </td>
+              <td>
+                <span style="font-size: 0.85rem;">{{ order.items.count }} Item</span>
+                {% for item in order.items.all %}
+                  {% if item.has_sablon %}
+                    <span class="badge-sablon-admin" title="Sablon: {{ item.custom_name }} #{{ item.custom_number }}">
+                      <i data-lucide="sparkles" style="width: 11px;"></i> Sablon
+                    </span>
+                  {% endif %}
+                {% endfor %}
+              </td>
+              <td>
+                <strong style="font-family: var(--font-heading); font-size: 1.05rem;">
+                  Rp {{ order.total|floatformat:0 }}
+                </strong>
+              </td>
+              <td>
+                <span class="status-pill status-pill--{{ order.status }}">
+                  {{ order.get_status_display }}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'dashboard:order_detail' order.id %}" class="btn-admin btn-admin--outline btn-admin--sm">
+                  Kelola
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 32px; color: var(--admin-text-muted);">
+                Belum ada transaksi pesanan yang masuk.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert Card -->
+  <div class="admin-card">
+    <div class="admin-card__header">
+      <h3 class="admin-card__title" style="color: var(--admin-danger);">
+        <i data-lucide="alert-triangle" style="width: 20px; vertical-align: middle;"></i>
+        Peringatan Stok Rendah
+      </h3>
+      <a href="{% url 'dashboard:product_list' %}" class="btn-admin btn-admin--outline btn-admin--sm">
+        Stok
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Jersey / Produk</th>
+            <th>Size</th>
+            <th>Sisa</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for variant in low_stock_variants %}
+            <tr>
+              <td>
+                <strong style="display: block; font-size: 0.85rem;">{{ variant.product.name }}</strong>
+                <span style="font-size: 0.72rem; color: var(--admin-text-muted);">{{ variant.product.category.name }}</span>
+              </td>
+              <td>
+                <strong style="padding: 2px 8px; background: var(--admin-bg); border-radius: 4px;">
+                  {{ variant.size }}
+                </strong>
+              </td>
+              <td>
+                <span style="color: var(--admin-danger); font-weight: 800; font-family: var(--font-heading); font-size: 1.1rem;">
+                  {{ variant.stock }} pcs
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'dashboard:product_edit' variant.product.id %}" class="btn-admin btn-admin--outline btn-admin--sm">
+                  Tambah
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 32px; color: var(--admin-success);">
+                <i data-lucide="check-circle" style="width: 24px; margin-bottom: 6px;"></i>
+                <div>Seluruh stok varian jersey dalam kondisi aman (> 5 pcs).</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

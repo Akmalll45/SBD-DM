@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Keranjang Belanja | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="cart-page-section">
+  <div class="container">
+    <div class="section-heading" style="margin-bottom: 28px;">
+      <div>
+        <span class="eyebrow">RINGKASAN PESANAN</span>
+        <h2>Keranjang Belanja ({{ items|length }} Item)</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:shop' %}">
+        <i data-lucide="arrow-left" style="width: 16px;"></i> Lanjut Belanja
+      </a>
+    </div>
+
+    {% if items %}
+      <div class="cart-layout">
+        <!-- Cart Items List -->
+        <div class="cart-table-wrapper">
+          <div class="cart-table-header">
+            Daftar Jersey & Perlengkapan Olahraga
+          </div>
+
+          <div class="cart-items-body">
+            {% for item in items %}
+              <div class="cart-item-row" id="cart-item-{{ item.id }}">
+                <!-- Product Thumbnail -->
+                <a href="{% url 'store:product_detail' item.product.slug %}" class="cart-item-thumb">
+                  {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                  {% else %}
+                    <i data-lucide="shirt" style="width: 42px; height: 42px; color: var(--color-muted);"></i>
+                  {% endif %}
+                </a>
+
+                <!-- Product & Sablon Details -->
+                <div class="cart-item-info">
+                  <a href="{% url 'store:product_detail' item.product.slug %}" class="cart-item-name">
+                    {{ item.product.name }}
+                  </a>
+                  <div class="cart-item-size-badge">
+                    Ukuran: <strong>{{ item.variant.size }}</strong> &bull; Kategori: {{ item.product.category.name }}
+                  </div>
+
+                  {% if item.has_sablon %}
+                    <div class="cart-sablon-tag">
+                      <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+                      Custom Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
+                      <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0 }})</span>
+                    </div>
+                  {% endif %}
+
+                  <div style="margin-top: 6px;">
+                    <form action="{% url 'store:remove_cart_item' item.id %}" method="post" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="drawer-item__remove" style="display:inline-flex; align-items:center; gap:4px;">
+                        <i data-lucide="trash-2" style="width: 13px;"></i> Hapus Item
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- Quantity Stepper Form -->
+                <div class="cart-item-qty-cell">
+                  <div class="quantity-stepper" style="height: 38px; grid-template-columns: 32px 40px 32px;">
+                    <form action="{% url 'store:update_cart_item' item.id %}" method="post" style="display:contents;">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="decrease">
+                      <button type="submit" aria-label="Kurangi kuantitas">&minus;</button>
+                    </form>
+
+                    <input type="text" value="{{ item.quantity }}" readonly style="font-size: 0.88rem;">
+
+                    <form action="{% url 'store:update_cart_item' item.id %}" method="post" style="display:contents;">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="increase">
+                      <button type="submit" aria-label="Tambah kuantitas">&plus;</button>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- Price & Subtotal -->
+                <div class="cart-item-price-cell">
+                  <span class="cart-item-total">Rp {{ item.line_total|floatformat:0 }}</span>
+                  <span class="cart-item-unit-note">@ Rp {{ item.unit_price|floatformat:0 }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Order Summary Side Card -->
+        <aside class="summary-box" aria-label="Ringkasan Pembayaran">
+          <h3>Ringkasan Belanja</h3>
+
+          <div class="summary-rows">
+            <div class="summary-line">
+              <span>Total Harga Produk</span>
+              <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Biaya Pengiriman</span>
+              <span class="badge-tag badge-tag--stock" style="font-size: 0.72rem;">GRATIS</span>
+            </div>
+            <div class="summary-line">
+              <span>Jaminan Kualitas</span>
+              <strong style="color: var(--color-success);">Terverifikasi</strong>
+            </div>
+
+            <div class="summary-total-line">
+              <span>Total Tagihan:</span>
+              <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+            </div>
+          </div>
+
+          <a href="{% url 'store:checkout' %}" class="button button--accent" style="width: 100%; min-height: 50px;">
+            Lanjut Ke Checkout <i data-lucide="arrow-right" style="width: 18px;"></i>
+          </a>
+
+          <div style="font-size: 0.78rem; color: var(--color-muted); text-align: center; display: flex; flex-direction: column; gap: 6px;">
+            <span><i data-lucide="shield-check" style="width: 14px; vertical-align: middle;"></i> Pembayaran terenkripsi & aman</span>
+            <span><i data-lucide="rotate-ccw" style="width: 14px; vertical-align: middle;"></i> Garansi retur bila produk cacat</span>
+          </div>
+        </aside>
+      </div>
+    {% else %}
+      <!-- Empty Cart State -->
+      <div class="catalog-empty" style="padding: 96px 24px;">
+        <i data-lucide="shopping-bag" style="width: 64px; height: 64px;"></i>
+        <h3>Keranjang Belanja Anda Kosong</h3>
+        <p style="color: var(--color-muted); max-width: 440px; margin: 0 auto 24px;">
+          Anda belum memilih jersey atau perlengkapan olahraga. Temukan koleksi jersey sepak bola klub impianmu dan buat custom sablon sekarang!
+        </p>
+        <a href="{% url 'store:shop' %}" class="button button--accent">
+          Mulai Belanja Jersey <i data-lucide="arrow-right" style="width: 16px;"></i>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+

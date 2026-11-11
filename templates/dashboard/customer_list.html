@@ -1,0 +1,105 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Daftar Pelanggan{% endblock %}
+{% block page_title %}Manajemen Pelanggan{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+  <!-- Header & Search -->
+  <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <div style="font-size: 0.95rem; font-weight: 700;">
+      Total Member Terdaftar: <strong style="color: var(--admin-accent);">{{ customers|length }}</strong>
+    </div>
+
+    <form method="get" action="{% url 'dashboard:customer_list' %}" style="display: flex; gap: 8px;">
+      <input 
+        type="search" 
+        name="q" 
+        placeholder="Cari username, email..." 
+        value="{{ search_query|default:'' }}"
+        class="form-input" 
+        style="height: 38px; width: 220px; font-size: 0.85rem;"
+      >
+      <button type="submit" class="btn-admin btn-admin--outline btn-admin--sm">
+        <i data-lucide="search" style="width: 14px;"></i>
+      </button>
+      {% if search_query %}
+        <a href="{% url 'dashboard:customer_list' %}" class="btn-admin btn-admin--outline btn-admin--sm">
+          <i data-lucide="rotate-ccw" style="width: 14px;"></i>
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Pelanggan</th>
+          <th>Email</th>
+          <th>Tanggal Bergabung</th>
+          <th>Jumlah Pesanan</th>
+          <th>Total Belanja</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in customers %}
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.9rem;">
+                  {{ customer.username|make_list|first|upper }}
+                </div>
+                <div>
+                  <strong style="display: block; font-size: 0.92rem; color: var(--admin-text-main);">
+                    {{ customer.get_full_name|default:customer.username }}
+                  </strong>
+                  <span style="font-size: 0.75rem; color: var(--admin-text-muted);">@{{ customer.username }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span>{{ customer.email|default:"-" }}</span>
+            </td>
+            <td>
+              <span style="font-size: 0.82rem; color: var(--admin-text-muted);">
+                {{ customer.date_joined|date:"d M Y, H:i" }}
+              </span>
+            </td>
+            <td>
+              <span style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700;">
+                {{ customer.orders_count|default:0 }} pesanan
+              </span>
+            </td>
+            <td>
+              <strong style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--admin-text-main);">
+                Rp {{ customer.total_spent|default:0|floatformat:0 }}
+              </strong>
+            </td>
+            <td>
+              {% if customer.is_active %}
+                <span style="color: var(--admin-success); font-weight: 700; font-size: 0.75rem; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                  Aktif
+                </span>
+              {% else %}
+                <span style="color: var(--admin-danger); font-size: 0.75rem;">Nonaktif</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+              <i data-lucide="users" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
+              <div>Belum ada pelanggan terdaftar.</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

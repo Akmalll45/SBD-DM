@@ -1,0 +1,131 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Kelola Pesanan & Sablon{% endblock %}
+{% block page_title %}Manajemen Pesanan & Sablon{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+  <!-- Tabs & Filter Bar -->
+  <div style="padding: 16px 24px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <!-- Status Filter Tabs -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="{% url 'dashboard:order_list' %}" class="btn-admin btn-admin--sm {% if not status_filter %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Semua ({{ counts.all }})
+      </a>
+      <a href="{% url 'dashboard:order_list' %}?status=pending" class="btn-admin btn-admin--sm {% if status_filter == 'pending' %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Pending ({{ counts.pending }})
+      </a>
+      <a href="{% url 'dashboard:order_list' %}?status=paid" class="btn-admin btn-admin--sm {% if status_filter == 'paid' %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Paid ({{ counts.paid }})
+      </a>
+      <a href="{% url 'dashboard:order_list' %}?status=shipped" class="btn-admin btn-admin--sm {% if status_filter == 'shipped' %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Shipped ({{ counts.shipped }})
+      </a>
+      <a href="{% url 'dashboard:order_list' %}?status=cancelled" class="btn-admin btn-admin--sm {% if status_filter == 'cancelled' %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Cancelled ({{ counts.cancelled }})
+      </a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="get" action="{% url 'dashboard:order_list' %}" style="display: flex; gap: 8px;">
+      {% if status_filter %}
+        <input type="hidden" name="status" value="{{ status_filter }}">
+      {% endif %}
+      <input 
+        type="search" 
+        name="q" 
+        placeholder="Cari ID, Nama, No. HP..." 
+        value="{{ search_query|default:'' }}"
+        class="form-input" 
+        style="height: 36px; font-size: 0.85rem; width: 220px;"
+      >
+      <button type="submit" class="btn-admin btn-admin--outline btn-admin--sm">
+        <i data-lucide="search" style="width: 14px;"></i>
+      </button>
+      {% if search_query or status_filter %}
+        <a href="{% url 'dashboard:order_list' %}" class="btn-admin btn-admin--outline btn-admin--sm" title="Reset">
+          <i data-lucide="rotate-ccw" style="width: 14px;"></i>
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Tanggal</th>
+          <th>Pelanggan</th>
+          <th>Kota Pengiriman</th>
+          <th>Spesifikasi Sablon</th>
+          <th>Total Tagihan</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td>
+              <a href="{% url 'dashboard:order_detail' order.id %}" style="font-weight: 800; color: var(--admin-accent); font-family: var(--font-heading); font-size: 1.05rem;">
+                #{{ order.id }}
+              </a>
+            </td>
+            <td>
+              <span style="font-size: 0.82rem; color: var(--admin-text-muted);">
+                {{ order.created_at|date:"d M Y, H:i" }}
+              </span>
+            </td>
+            <td>
+              <strong>{{ order.full_name }}</strong>
+              <div style="font-size: 0.78rem; color: var(--admin-text-muted);">{{ order.phone }}</div>
+            </td>
+            <td>
+              <span>{{ order.city }}</span>
+            </td>
+            <td>
+              <!-- Sablon Presence Indicator -->
+              {% for item in order.items.all %}
+                {% if item.has_sablon %}
+                  <div class="badge-sablon-admin" style="margin-bottom: 4px;">
+                    <i data-lucide="sparkles" style="width: 11px;"></i>
+                    {{ item.custom_name }} #{{ item.custom_number }}
+                  </div>
+                {% endif %}
+              {% empty %}
+                <span style="color: var(--admin-text-muted); font-size: 0.75rem;">-</span>
+              {% endfor %}
+            </td>
+            <td>
+              <strong style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--admin-text-main);">
+                Rp {{ order.total|floatformat:0 }}
+              </strong>
+            </td>
+            <td>
+              <span class="status-pill status-pill--{{ order.status }}">
+                {{ order.get_status_display }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'dashboard:order_detail' order.id %}" class="btn-admin btn-admin--primary btn-admin--sm">
+                Detail <i data-lucide="arrow-right" style="width: 13px;"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+              <i data-lucide="inbox" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
+              <div>Tidak ada data pesanan yang sesuai filter.</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

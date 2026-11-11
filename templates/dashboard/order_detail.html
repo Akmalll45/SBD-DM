@@ -1,0 +1,208 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Detail Pesanan #{{ order.id }}{% endblock %}
+{% block page_title %}Detail Pesanan #{{ order.id }}{% endblock %}
+
+{% block admin_content %}
+<!-- Top Action Bar -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <a href="{% url 'dashboard:order_list' %}" class="btn-admin btn-admin--outline btn-admin--sm">
+      <i data-lucide="arrow-left" style="width: 14px;"></i> Kembali
+    </a>
+    <h2 style="margin: 0; font-family: var(--font-heading); font-size: 1.8rem; text-transform: uppercase;">
+      Pesanan #{{ order.id }}
+    </h2>
+    <span class="status-pill status-pill--{{ order.status }}">
+      {{ order.get_status_display }}
+    </span>
+    {% if has_any_sablon %}
+      <span class="badge-sablon-admin">
+        <i data-lucide="sparkles" style="width: 12px;"></i> Berisi Item Custom Sablon
+      </span>
+    {% endif %}
+  </div>
+
+  <!-- Status Changer Form -->
+  <form method="post" style="display: flex; align-items: center; gap: 10px; background: #ffffff; padding: 6px 12px; border: 1px solid var(--admin-border); border-radius: 4px;">
+    {% csrf_token %}
+    <label style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted); white-space: nowrap;">
+      Ubah Status:
+    </label>
+    {{ form.status }}
+    <button type="submit" class="btn-admin btn-admin--accent btn-admin--sm">
+      Update Status
+    </button>
+  </form>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+  <!-- Left Column: Ordered Items Table with Sablon Details -->
+  <div class="admin-card">
+    <div class="admin-card__header">
+      <h3 class="admin-card__title">
+        <i data-lucide="shirt" style="width: 18px; vertical-align: middle;"></i>
+        Daftar Item Jersey & Perlengkapan Olahraga
+      </h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Produk</th>
+            <th>Ukuran</th>
+            <th>Instruksi Custom Sablon</th>
+            <th>Harga Satuan</th>
+            <th>Qty</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+            <tr>
+              <td>
+                <strong style="font-size: 0.95rem; color: var(--admin-text-main);">
+                  {{ item.product_name }}
+                </strong>
+                {% if item.product %}
+                  <div style="font-size: 0.75rem; color: var(--admin-text-muted);">
+                    {{ item.product.category.name }}
+                  </div>
+                {% endif %}
+              </td>
+              <td>
+                <span style="display: inline-block; padding: 4px 10px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; font-weight: 700; font-family: var(--font-heading); font-size: 1.1rem;">
+                  {{ item.size|default:"-" }}
+                </span>
+              </td>
+              <td>
+                <!-- PROMINENT CUSTOM SABLON CALLOUT -->
+                {% if item.has_sablon %}
+                  <div style="background: #0f172a; color: #ffffff; padding: 10px 14px; border-radius: 6px; border: 1px solid #0284c7; max-width: 240px;">
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #38bdf8; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                      <i data-lucide="printer" style="width: 12px;"></i> SPESIFIKASI SABLON
+                    </div>
+                    <div style="font-family: var(--font-heading); font-size: 1.15rem; font-weight: 800; letter-spacing: 0.06em; color: #ffffff;">
+                      {{ item.custom_name|default:"TANPA NAMA" }}
+                    </div>
+                    <div style="font-family: var(--font-heading); font-size: 2rem; font-weight: 800; line-height: 1; color: var(--admin-accent); margin-top: 2px;">
+                      #{{ item.custom_number|default:"00" }}
+                    </div>
+                  </div>
+                {% else %}
+                  <span style="font-size: 0.82rem; color: var(--admin-text-muted); font-style: italic;">
+                    Polos (Tanpa Custom Sablon)
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <span style="font-size: 0.9rem;">Rp {{ item.unit_price|floatformat:0 }}</span>
+              </td>
+              <td>
+                <strong>{{ item.quantity }}</strong>
+              </td>
+              <td>
+                <strong style="font-family: var(--font-heading); font-size: 1.15rem;">
+                  Rp {{ item.line_total|floatformat:0 }}
+                </strong>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Financial Breakdown Footer -->
+    <div style="padding: 20px 24px; background: var(--admin-bg); border-top: 1px solid var(--admin-border); display: flex; justify-content: flex-end;">
+      <div style="width: 300px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--admin-text-muted);">
+          <span>Total Produk:</span>
+          <strong>Rp {{ order.total|floatformat:0 }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--admin-text-muted);">
+          <span>Ongkos Kirim:</span>
+          <span style="color: var(--admin-success); font-weight: 700;">GRATIS</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--admin-border); margin-top: 4px;">
+          <span style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; text-transform: uppercase;">
+            Total Tagihan:
+          </span>
+          <strong style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; color: var(--admin-accent);">
+            Rp {{ order.total|floatformat:0 }}
+          </strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Customer & Shipping Address Info -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Customer Details Card -->
+    <div class="admin-card">
+      <div class="admin-card__header">
+        <h3 class="admin-card__title">
+          <i data-lucide="user" style="width: 18px; vertical-align: middle;"></i>
+          Data Pemesan
+        </h3>
+      </div>
+      <div style="padding: 20px;">
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Nama Lengkap
+          </span>
+          <strong style="font-size: 1rem;">{{ order.full_name }}</strong>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Telepon / WhatsApp
+          </span>
+          <span style="font-size: 0.95rem; font-weight: 600;">{{ order.phone }}</span>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Akun Terdaftar
+          </span>
+          <span>{{ order.user.username }} ({{ order.user.email|default:"Tidak ada email" }})</span>
+        </div>
+        <div>
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Waktu Pemesanan
+          </span>
+          <span style="font-size: 0.85rem; color: var(--admin-text-muted);">
+            {{ order.created_at|date:"l, d F Y - H:i" }} WIB
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping Address Card -->
+    <div class="admin-card">
+      <div class="admin-card__header">
+        <h3 class="admin-card__title">
+          <i data-lucide="map-pin" style="width: 18px; vertical-align: middle;"></i>
+          Alamat Pengiriman
+        </h3>
+      </div>
+      <div style="padding: 20px;">
+        <div style="margin-bottom: 10px;">
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Kota / Kabupaten
+          </span>
+          <strong style="font-size: 0.95rem;">{{ order.city }}</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
+            Alamat Lengkap
+          </span>
+          <p style="margin: 4px 0 0; font-size: 0.88rem; line-height: 1.5; color: var(--admin-text-main); background: var(--admin-bg); padding: 12px; border-radius: 4px; border: 1px solid var(--admin-border);">
+            {{ order.address }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

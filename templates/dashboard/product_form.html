@@ -1,0 +1,136 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}
+  {% if is_create %}Tambah Produk Baru{% else %}Edit Produk: {{ product.name }}{% endif %}
+{% endblock %}
+
+{% block page_title %}
+  {% if is_create %}Tambah Produk Baru{% else %}Edit Produk{% endif %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card" style="max-width: 900px; margin: 0 auto;">
+  <div class="admin-card__header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="{% url 'dashboard:product_list' %}" class="btn-admin btn-admin--outline btn-admin--sm">
+        <i data-lucide="arrow-left" style="width: 14px;"></i>
+      </a>
+      <h3 class="admin-card__title">
+        {% if is_create %}Formulir Tambah Produk Baru{% else %}Edit: {{ product.name }}{% endif %}
+      </h3>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="admin-form-grid">
+      <!-- Category -->
+      <div class="admin-field">
+        <label for="{{ form.category.id_for_label }}">{{ form.category.label }} *</label>
+        {{ form.category }}
+        {% if form.category.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.category.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Base Price -->
+      <div class="admin-field">
+        <label for="{{ form.base_price.id_for_label }}">{{ form.base_price.label }} *</label>
+        {{ form.base_price }}
+        {% if form.base_price.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.base_price.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Product Name -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.name.id_for_label }}">{{ form.name.label }} *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.name.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Slug -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.slug.id_for_label }}">{{ form.slug.label }}</label>
+        {{ form.slug }}
+        <span style="font-size: 0.72rem; color: var(--admin-text-muted);">
+          Kosongkan agar otomatis di-generate dari nama produk.
+        </span>
+        {% if form.slug.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.slug.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Image Upload & Preview -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+        {% if not is_create and product.image %}
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
+            <div style="width: 72px; height: 72px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; overflow: hidden;">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <span style="font-size: 0.8rem; color: var(--admin-text-muted);">Foto saat ini. Pilih file baru untuk mengganti.</span>
+          </div>
+        {% endif %}
+        {{ form.image }}
+        {% if form.image.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.image.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Description -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.description.id_for_label }}">{{ form.description.label }} *</label>
+        {{ form.description }}
+        {% if form.description.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.description.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- SIZE VARIANTS INVENTORY SECTION -->
+      <div class="form-group-full" style="padding: 20px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 6px;">
+        <h4 style="margin: 0 0 8px 0; font-family: var(--font-heading); font-size: 1.15rem; text-transform: uppercase;">
+          <i data-lucide="layers" style="width: 16px; vertical-align: middle;"></i>
+          Alokasi Stok Ukuran Jersey (S, M, L, XL)
+        </h4>
+        <p style="margin: 0 0 16px 0; font-size: 0.8rem; color: var(--admin-text-muted);">
+          Tentukan stok per ukuran. Total stok umum produk akan otomatis dihitung dari penjumlahan seluruh ukuran.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+          <div class="admin-field">
+            <label for="{{ form.stock_s.id_for_label }}">Ukuran S</label>
+            {{ form.stock_s }}
+          </div>
+          <div class="admin-field">
+            <label for="{{ form.stock_m.id_for_label }}">Ukuran M</label>
+            {{ form.stock_m }}
+          </div>
+          <div class="admin-field">
+            <label for="{{ form.stock_l.id_for_label }}">Ukuran L</label>
+            {{ form.stock_l }}
+          </div>
+          <div class="admin-field">
+            <label for="{{ form.stock_xl.id_for_label }}">Ukuran XL</label>
+            {{ form.stock_xl }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Toggle -->
+      <div class="form-group-full">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+          {{ form.is_featured }}
+          <span style="font-weight: 700; font-size: 0.9rem;">{{ form.is_featured.label }}</span>
+        </label>
+        <span style="font-size: 0.75rem; color: var(--admin-text-muted); display: block; margin-left: 28px;">
+          Produk bertanda featured akan muncul di grid halaman depan (Homepage).
+        </span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="padding: 18px 24px; background: var(--admin-bg); border-top: 1px solid var(--admin-border); display: flex; justify-content: flex-end; gap: 12px;">
+      <a href="{% url 'dashboard:product_list' %}" class="btn-admin btn-admin--outline">
+        Batal
+      </a>
+      <button type="submit" class="btn-admin btn-admin--accent">
+        <i data-lucide="save" style="width: 16px;"></i> Simpan Produk
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

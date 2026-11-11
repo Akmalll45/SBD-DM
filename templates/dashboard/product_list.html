@@ -1,0 +1,139 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Kelola Produk & Inventaris{% endblock %}
+{% block page_title %}Manajemen Produk & Stok{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+  <!-- Action & Filter Header -->
+  <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="{% url 'dashboard:product_list' %}" class="btn-admin btn-admin--sm {% if not active_category %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+        Semua Kategori
+      </a>
+      {% for cat in categories %}
+        <a href="{% url 'dashboard:product_list' %}?category={{ cat.slug }}" class="btn-admin btn-admin--sm {% if active_category == cat.slug %}btn-admin--primary{% else %}btn-admin--outline{% endif %}">
+          {{ cat.name }}
+        </a>
+      {% endfor %}
+    </div>
+
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <form method="get" action="{% url 'dashboard:product_list' %}" style="display: flex; gap: 8px;">
+        {% if active_category %}
+          <input type="hidden" name="category" value="{{ active_category }}">
+        {% endif %}
+        <input 
+          type="search" 
+          name="q" 
+          placeholder="Cari produk..." 
+          value="{{ search_query|default:'' }}"
+          class="form-input" 
+          style="height: 38px; width: 200px; font-size: 0.85rem;"
+        >
+        <button type="submit" class="btn-admin btn-admin--outline btn-admin--sm">
+          <i data-lucide="search" style="width: 14px;"></i>
+        </button>
+      </form>
+
+      <a href="{% url 'dashboard:product_create' %}" class="btn-admin btn-admin--accent">
+        <i data-lucide="plus" style="width: 16px;"></i> Tambah Produk Baru
+      </a>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>Nama Produk & Kategori</th>
+          <th>Harga Dasar</th>
+          <th>Rincian Stok Ukuran (S / M / L / XL)</th>
+          <th>Total Stok</th>
+          <th>Featured</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td style="width: 60px;">
+              <div style="width: 52px; height: 52px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                  <i data-lucide="shirt" style="width: 24px; color: var(--admin-text-muted);"></i>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <a href="{% url 'dashboard:product_edit' product.id %}" style="font-weight: 700; color: var(--admin-text-main); font-size: 0.95rem;">
+                {{ product.name }}
+              </a>
+              <div style="font-size: 0.75rem; color: var(--admin-text-muted);">
+                {{ product.category.name }} &bull; Slug: <code>{{ product.slug }}</code>
+              </div>
+            </td>
+            <td>
+              <strong style="font-family: var(--font-heading); font-size: 1.15rem;">
+                Rp {{ product.base_price|floatformat:0 }}
+              </strong>
+            </td>
+            <td>
+              <!-- Breakdown S, M, L, XL -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                {% for variant in product.variants.all %}
+                  <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; font-size: 0.75rem;">
+                    <strong>{{ variant.size }}:</strong> 
+                    <span style="{% if variant.stock <= 5 %}color:var(--admin-danger); font-weight:800;{% endif %}">{{ variant.stock }}</span>
+                  </span>
+                {% empty %}
+                  <span style="font-size: 0.75rem; color: var(--admin-text-muted);">Belum ada varian</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              <span style="font-weight: 700; font-family: var(--font-heading); font-size: 1.1rem; {% if product.stock <= 10 %}color:var(--admin-warning);{% endif %}">
+                {{ product.stock }} pcs
+              </span>
+            </td>
+            <td>
+              {% if product.is_featured %}
+                <span style="color: var(--admin-success); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem;">
+                  <i data-lucide="check-circle-2" style="width: 15px;"></i> Ya
+                </span>
+              {% else %}
+                <span style="color: var(--admin-text-muted); font-size: 0.8rem;">Tidak</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="{% url 'dashboard:product_edit' product.id %}" class="btn-admin btn-admin--outline btn-admin--sm" title="Edit">
+                  <i data-lucide="edit-3" style="width: 13px;"></i> Edit
+                </a>
+                <form action="{% url 'dashboard:product_delete' product.id %}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-admin btn-admin--danger btn-admin--sm" title="Hapus">
+                    <i data-lucide="trash-2" style="width: 13px;"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+              <i data-lucide="package-search" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
+              <div>Belum ada produk yang ditemukan.</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

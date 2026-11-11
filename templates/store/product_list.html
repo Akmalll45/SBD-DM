@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if active_category %}{{ active_category.name }} | Hendra Sport{% else %}All Jerseys & Sports Gear | Hendra Sport{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Catalog Header Banner -->
+<header class="catalog-header">
+  <div class="container">
+    <span class="eyebrow">
+      {% if active_category %}Kategori: {{ active_category.name }}{% else %}Koleksi Lengkap{% endif %}
+    </span>
+    <h1>
+      {% if active_category %}
+        {{ active_category.name }}
+      {% elif query %}
+        Hasil Pencarian: "{{ query }}"
+      {% else %}
+        All Jerseys & Sports Gear
+      {% endif %}
+    </h1>
+    <p style="color: var(--color-muted); margin: 0; max-width: 600px;">
+      Jelajahi jersey sepak bola orisinal, apparel olahraga, dan perlengkapan tanding dengan opsi kustom sablon nama dan nomor punggung.
+    </p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="catalog-layout">
+    <!-- Sidebar Filtering -->
+    <aside class="catalog-sidebar" aria-label="Filter Produk">
+      <!-- Search Filter -->
+      <div class="filter-box">
+        <h4>Pencarian</h4>
+        <form method="get" action="{% url 'store:shop' %}" style="display:flex; flex-direction:column; gap:8px;">
+          {% if active_category %}
+            <input type="hidden" name="category" value="{{ active_category.slug }}">
+          {% endif %}
+          {% if sort_by %}
+            <input type="hidden" name="sort" value="{{ sort_by }}">
+          {% endif %}
+          <div style="position:relative;">
+            <input 
+              type="text" 
+              name="q" 
+              placeholder="Cari jersey..." 
+              value="{{ query|default:'' }}"
+              style="width:100%; height:40px; padding:0 32px 0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); outline:none;"
+            >
+            <i data-lucide="search" style="position:absolute; right:10px; top:12px; width:16px; color:var(--color-muted);"></i>
+          </div>
+          <button type="submit" class="button button--dark" style="min-height:38px; font-size:0.8rem; width:100%;">
+            Terapkan
+          </button>
+        </form>
+      </div>
+
+      <!-- Categories Filter -->
+      <div class="filter-box">
+        <h4>Kategori Olahraga</h4>
+        <ul class="filter-list">
+          <li>
+            <a 
+              href="{% url 'store:shop' %}{% if query %}?q={{ query }}{% endif %}" 
+              class="filter-link {% if not active_category %}active{% endif %}"
+            >
+              <span>Semua Kategori</span>
+              <i data-lucide="chevron-right" style="width:14px;"></i>
+            </a>
+          </li>
+          {% for cat in categories %}
+            <li>
+              <a 
+                href="{% url 'store:shop' %}?category={{ cat.slug }}{% if query %}&q={{ query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+                class="filter-link {% if active_category and active_category.slug == cat.slug %}active{% endif %}"
+              >
+                <span>{{ cat.name }}</span>
+                <i data-lucide="chevron-right" style="width:14px;"></i>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Quick Sablon Guarantee Card -->
+      <div class="filter-box" style="background: var(--color-soft); border-style: dashed;">
+        <span class="badge-tag badge-tag--sablon" style="margin-bottom:8px;">Fitur Unggulan</span>
+        <h4 style="border:none; margin-bottom:8px; padding-bottom:0;">Custom Sablon</h4>
+        <p style="font-size:0.82rem; color:var(--color-muted); line-height:1.5; margin-bottom:12px;">
+          Setiap jersey sepak bola dapat ditambahkan sablon nama & nomor punggung dengan biaya flat Rp {{ SABLON_FEE|floatformat:0 }}.
+        </p>
+      </div>
+
+      <!-- Reset Filters Button if applied -->
+      {% if active_category or query or sort_by != 'newest' %}
+        <a href="{% url 'store:shop' %}" class="button button--outline" style="min-height:38px; font-size:0.8rem; width:100%;">
+          <i data-lucide="rotate-ccw" style="width:14px;"></i> Reset Semua Filter
+        </a>
+      {% endif %}
+    </aside>
+
+    <!-- Main Products Listing Area -->
+    <main class="catalog-content">
+      <!-- Toolbar: Count & Sorting -->
+      <div class="catalog-toolbar">
+        <div style="font-size: 0.9rem; color: var(--color-muted);">
+          Menampilkan <strong>{{ products|length }}</strong> produk
+          {% if active_category %}dalam kategori <strong>{{ active_category.name }}</strong>{% endif %}
+        </div>
+
+        <form method="get" action="{% url 'store:shop' %}" id="sort-form" style="display:flex; align-items:center; gap:8px;">
+          {% if active_category %}
+            <input type="hidden" name="category" value="{{ active_category.slug }}">
+          {% endif %}
+          {% if query %}
+            <input type="hidden" name="q" value="{{ query }}">
+          {% endif %}
+
+          <label for="sort-select" style="font-size:0.85rem; font-weight:600; color:var(--color-dark); white-space:nowrap;">
+            Urutkan:
+          </label>
+          <select id="sort-select" name="sort" onchange="document.getElementById('sort-form').submit();">
+            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Terbaru</option>
+            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Harga: Rendah ke Tinggi</option>
+            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Harga: Tinggi ke Rendah</option>
+            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nama Produk (A-Z)</option>
+          </select>
+        </form>
+      </div>
+
+      <!-- Products Grid -->
+      {% if products %}
+        <div class="product-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+          {% for product in products %}
+            <article class="product-card">
+              <div class="product-card__badges">
+                {% if product.is_featured %}
+                  <span class="badge-tag badge-tag--accent">Featured</span>
+                {% endif %}
+                {% if 'jersey' in product.category.name|lower %}
+                  <span class="badge-tag badge-tag--sablon">Custom Sablon</span>
+                {% endif %}
+              </div>
+
+              <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                {% else %}
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
+                    <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>
+                    <span style="font-size: 0.75rem; text-transform: uppercase;">Official Gear</span>
+                  </div>
+                {% endif %}
+              </a>
+
+              <div class="product-card__body">
+                <div class="product-card__category">{{ product.category.name }}</div>
+                <h3 class="product-card__name">
+                  <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
+                </h3>
+
+                <div class="product-card__footer">
+                  <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+                  <a href="{% url 'store:product_detail' product.slug %}" class="button button--dark" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
+                    Detail <i data-lucide="arrow-right" style="width: 14px;"></i>
+                  </a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <!-- Empty State -->
+        <div class="catalog-empty">
+          <i data-lucide="package-search"></i>
+          <h3>Produk Tidak Ditemukan</h3>
+          <p style="color:var(--color-muted); max-width:440px; margin: 0 auto 20px;">
+            Maaf, tidak ada produk atau jersey yang sesuai dengan kriteria filter pencarian Anda saat ini.
+          </p>
+          <a href="{% url 'store:shop' %}" class="button button--accent">
+            Reset dan Tampilkan Semua Produk
+          </a>
+        </div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}
+

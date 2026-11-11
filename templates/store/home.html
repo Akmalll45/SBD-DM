@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hendra Sport | Official Football Jerseys & Custom Sablon{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero__media" role="img" aria-label="Sepak bola dan perlengkapan olahraga modern"></div>
+  <div class="hero__overlay"></div>
+  <div class="container hero__content">
+    <p class="eyebrow" style="color: var(--color-accent); font-weight: 800;">OFFICIAL FOOTBALL & SPORTS GEAR</p>
+    <h1>GEAR UP.<br>PUSH YOUR LIMITS.</h1>
+    <p>
+      Pusat jersey sepak bola klub & timnas premium. Personalisasikan jersey idolamu dengan fitur 
+      <strong>Custom Sablon</strong> resmi: nama dan nomor punggung idamanmu berstandar pro player.
+    </p>
+    <div class="hero__actions">
+      <a class="button button--accent" href="{% url 'store:shop' %}">
+        Belanja Sekarang <i data-lucide="arrow-right" style="width: 18px;"></i>
+      </a>
+      <a class="button button--outline-light" href="{% url 'store:shop' %}?category=football-jerseys">
+        Koleksi Jersey Sepak Bola
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Trust Benefits Strip -->
+<section class="trust-strip" aria-label="Keunggulan Berbelanja di Hendra Sport">
+  <div class="container trust-strip__grid">
+    <div class="trust-item">
+      <i data-lucide="truck"></i>
+      <div>
+        <strong>Pengiriman Seluruh Indonesia</strong>
+        <span>Kurir terpercaya & aman</span>
+      </div>
+    </div>
+    <div class="trust-item">
+      <i data-lucide="badge-check"></i>
+      <div>
+        <strong>Kualitas Premium Pro</strong>
+        <span>Bahan breathable HEAT.RDY</span>
+      </div>
+    </div>
+    <div class="trust-item">
+      <i data-lucide="printer"></i>
+      <div>
+        <strong>Custom Sablon Presisi</strong>
+        <span>Polyflex high-grade tahan lama</span>
+      </div>
+    </div>
+    <div class="trust-item">
+      <i data-lucide="shield-check"></i>
+      <div>
+        <strong>Garansi Kepuasan</strong>
+        <span>Layanan bantuan responsif</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Shop by Category Section -->
+<section class="section" id="categories">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">JELAJAHI KATALOG</span>
+        <h2>Kategori Olahraga</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:shop' %}">
+        Lihat Semua <i data-lucide="arrow-right" style="width: 16px;"></i>
+      </a>
+    </div>
+
+    <div class="category-grid">
+      {% for category in categories %}
+        <a class="category-card" href="{% url 'store:shop' %}?category={{ category.slug }}">
+          <div class="category-card__bg"></div>
+          <h3 class="category-card__title">{{ category.name }}</h3>
+        </a>
+      {% empty %}
+        <a class="category-card" href="{% url 'store:shop' %}?category=football-jerseys">
+          <div class="category-card__bg"></div>
+          <h3 class="category-card__title">Football Jerseys</h3>
+        </a>
+        <a class="category-card" href="{% url 'store:shop' %}?category=other-sports-jerseys">
+          <div class="category-card__bg"></div>
+          <h3 class="category-card__title">Other Sports</h3>
+        </a>
+        <a class="category-card" href="{% url 'store:shop' %}?category=sports-equipment">
+          <div class="category-card__bg"></div>
+          <h3 class="category-card__title">Sports Equipment</h3>
+        </a>
+        <a class="category-card" href="{% url 'store:shop' %}">
+          <div class="category-card__bg"></div>
+          <h3 class="category-card__title">All Gear</h3>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Featured Jerseys Grid -->
+<section class="section section--muted" id="featured">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">PILIHAN UTAMA</span>
+        <h2>Featured Jerseys</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:shop' %}">
+        Semua Jersey <i data-lucide="arrow-right" style="width: 16px;"></i>
+      </a>
+    </div>
+
+    <div class="product-grid">
+      {% for product in featured_products %}
+        <article class="product-card">
+          <div class="product-card__badges">
+            <span class="badge-tag badge-tag--accent">Featured</span>
+            {% if 'jersey' in product.category.name|lower %}
+              <span class="badge-tag badge-tag--sablon">Custom Sablon</span>
+            {% endif %}
+          </div>
+
+          <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
+                <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>
+                <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Hendra Sport Official</span>
+              </div>
+            {% endif %}
+          </a>
+
+          <div class="product-card__body">
+            <div class="product-card__category">{{ product.category.name }}</div>
+            <h3 class="product-card__name">
+              <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
+            </h3>
+
+            <div class="product-card__footer">
+              <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+              <a href="{% url 'store:product_detail' product.slug %}" class="button button--dark" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
+                Detail <i data-lucide="chevron-right" style="width: 14px;"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--color-muted);">
+          Belum ada produk featured.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Custom Sablon Promo Banner -->
+<section class="container">
+  <div class="promo-banner">
+    <div class="promo-banner__content">
+      <span class="eyebrow" style="color: var(--color-accent);">CUSTOM SABLON SERVICE</span>
+      <h2>CETAK NAMA & NOMOR PUNGGUNG PILIHANMU</h2>
+      <p>
+        Jadikan jerseymu unik! Tambahkan nama dan nomor punggung dengan font resmi klub atau timnas. 
+        Tekstur polyflex lentur, tahan cuci, dan nyaman digunakan bertanding.
+      </p>
+      <a class="button button--accent" href="{% url 'store:shop' %}?category=football-jerseys">
+        Pilih Jersey Untuk Di-Sablon <i data-lucide="arrow-right" style="width: 16px;"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- New Arrivals Section -->
+<section class="section">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">JUST DROPPED</span>
+        <h2>New Arrivals</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:shop' %}">
+        Lihat Koleksi Terbaru <i data-lucide="arrow-right" style="width: 16px;"></i>
+      </a>
+    </div>
+
+    <div class="product-grid">
+      {% for product in latest_products %}
+        <article class="product-card">
+          <div class="product-card__badges">
+            <span class="badge-tag" style="background: var(--color-primary); color: #fff;">New Drop</span>
+            {% if 'jersey' in product.category.name|lower %}
+              <span class="badge-tag badge-tag--sablon">Custom Sablon</span>
+            {% endif %}
+          </div>
+
+          <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
+                <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>
+                <span style="font-size: 0.75rem; text-transform: uppercase;">Official Gear</span>
+              </div>
+            {% endif %}
+          </a>
+
+          <div class="product-card__body">
+            <div class="product-card__category">{{ product.category.name }}</div>
+            <h3 class="product-card__name">
+              <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
+            </h3>
+
+            <div class="product-card__footer">
+              <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+              <a href="{% url 'store:product_detail' product.slug %}" class="button button--outline" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
+                Pilih <i data-lucide="chevron-right" style="width: 14px;"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--color-muted);">
+          Belum ada produk baru.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

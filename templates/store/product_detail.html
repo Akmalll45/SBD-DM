@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="product-detail-section">
+  <div class="container">
+    <!-- Breadcrumb Trail -->
+    <nav class="product-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'store:home' %}">Home</a>
+      <i data-lucide="chevron-right" style="width: 14px;"></i>
+      <a href="{% url 'store:shop' %}">Shop</a>
+      <i data-lucide="chevron-right" style="width: 14px;"></i>
+      <a href="{% url 'store:shop' %}?category={{ product.category.slug }}">{{ product.category.name }}</a>
+      <i data-lucide="chevron-right" style="width: 14px;"></i>
+      <span style="color: var(--color-dark); font-weight: 600;">{{ product.name }}</span>
+    </nav>
+
+    <!-- Product Detail Split Layout -->
+    <div class="product-detail-grid">
+      <!-- Left Column: Gallery & Highlights -->
+      <div class="product-gallery-box">
+        <div class="product-main-frame">
+          <div class="product-gallery-badges">
+            {% if product.is_featured %}
+              <span class="badge-tag badge-tag--accent">Featured</span>
+            {% endif %}
+            {% if 'jersey' in product.category.name|lower %}
+              <span class="badge-tag badge-tag--sablon">Custom Sablon Ready</span>
+            {% endif %}
+          </div>
+
+          {% if product.image %}
+            <img id="main-product-img" src="{{ product.image.url }}" alt="{{ product.name }}">
+          {% else %}
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px; color: var(--color-muted);">
+              <i data-lucide="shirt" style="width: 110px; height: 110px; stroke-width: 1.1;"></i>
+              <span style="font-family: var(--font-heading); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.08em;">
+                Authentic Matchday Issue
+              </span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Pro Features Strip -->
+        <div class="product-features-strip">
+          <div class="feature-pill">
+            <i data-lucide="wind"></i>
+            <div>
+              <strong style="display:block;">HEAT.RDY</strong>
+              <span style="color:var(--color-muted);">Sirkulasi udara pro</span>
+            </div>
+          </div>
+          <div class="feature-pill">
+            <i data-lucide="printer"></i>
+            <div>
+              <strong style="display:block;">Polyflex HD</strong>
+              <span style="color:var(--color-muted);">Sablon tahan cuci</span>
+            </div>
+          </div>
+          <div class="feature-pill">
+            <i data-lucide="shield-check"></i>
+            <div>
+              <strong style="display:block;">100% Orisinal</strong>
+              <span style="color:var(--color-muted);">Jaminan mutu resmi</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Specs, Custom Sablon Toggle, Form -->
+      <div class="product-info-column">
+        <div class="product-title-area">
+          <span class="eyebrow">{{ product.category.name }}</span>
+          <h1>{{ product.name }}</h1>
+        </div>
+
+        <!-- Dynamic Price Card -->
+        <div class="price-card">
+          <div class="price-card__main">
+            <span class="price-card__amount" id="total-unit-price-display">
+              Rp {{ product.base_price|floatformat:0 }}
+            </span>
+            <span class="price-card__note">/ pcs</span>
+          </div>
+
+          <div class="price-breakdown">
+            <span>Harga Jersey: <strong>Rp {{ product.base_price|floatformat:0 }}</strong></span>
+            <span id="sablon-fee-note" style="display: none;" class="active">
+              + Sablon Polyflex (Rp {{ sablon_fee|floatformat:0 }})
+            </span>
+          </div>
+        </div>
+
+        <div style="font-size: 0.95rem; color: var(--color-muted); line-height: 1.65;">
+          {{ product.description }}
+        </div>
+
+        <!-- Purchase & Customization Form -->
+        <form id="add-to-cart-form" action="{% url 'store:add_to_cart' product.id %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="variant_id" id="selected-variant-id" required>
+
+          <!-- 1. Size Selection Pills (S, M, L, XL) -->
+          <div class="option-block">
+            <div class="option-header">
+              <strong>Pilih Ukuran Jersey:</strong>
+              <span id="size-status" style="color: var(--color-accent); font-weight: 600;">Silakan pilih ukuran</span>
+            </div>
+
+            <div class="size-pill-group" id="size-pill-group">
+              {% for variant in variants %}
+                <button 
+                  type="button" 
+                  class="size-pill {% if variant.stock <= 0 %}disabled{% endif %}" 
+                  data-variant-id="{{ variant.id }}"
+                  data-size="{{ variant.size }}"
+                  data-stock="{{ variant.stock }}"
+                  {% if variant.stock <= 0 %}disabled{% endif %}
+                >
+                  {{ variant.size }}
+                </button>
+              {% empty %}
+                <p style="color:var(--color-muted); font-size:0.88rem;">Varian ukuran belum tersedia.</p>
+              {% endfor %}
+            </div>
+            <div id="size-error" style="display:none; color:var(--color-danger); font-size:0.8rem; font-weight:600;">
+              * Harap tentukan ukuran terlebih dahulu sebelum menambahkan ke keranjang.
+            </div>
+          </div>
+
+          <!-- 2. "Custom Sablon" Toggle Feature -->
+          <div class="sablon-card" id="sablon-card" style="margin-top: 24px;">
+            <div class="sablon-card__header" id="sablon-header-toggle">
+              <div class="sablon-card__info">
+                <div class="sablon-icon-box">
+                  <i data-lucide="sparkles"></i>
+                </div>
+                <div>
+                  <h4>Custom Sablon Nama & Nomor</h4>
+                  <p>Cetak nama & nomor punggung resmi (+Rp {{ sablon_fee|floatformat:0 }})</p>
+                </div>
+              </div>
+
+              <!-- Switch Toggle -->
+              <label class="switch" for="sablon-checkbox" onclick="event.stopPropagation();">
+                <input type="checkbox" id="sablon-checkbox" name="has_sablon" value="1">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Revealable Sablon Input Fields Container -->
+            <div class="sablon-card__body" id="sablon-body">
+              <div class="sablon-inputs-grid">
+                <div class="field-item">
+                  <label for="custom_name_input">Nama Punggung (Maks. 16 Huruf)</label>
+                  <input 
+                    type="text" 
+                    id="custom_name_input" 
+                    name="custom_name" 
+                    maxlength="16" 
+                    placeholder="CONTOH: RONALDO" 
+                    autocomplete="off"
+                  >
+                </div>
+                <div class="field-item">
+                  <label for="custom_number_input">Nomor Punggung (0 - 99)</label>
+                  <input 
+                    type="number" 
+                    id="custom_number_input" 
+                    name="custom_number" 
+                    min="0" 
+                    max="99" 
+                    placeholder="7"
+                  >
+                </div>
+              </div>
+
+              <!-- Live Jersey Back Mockup Preview -->
+              <div class="jersey-live-preview">
+                <div class="jersey-back-art">
+                  <div class="jersey-collar-shape"></div>
+                  <div class="jersey-preview-name" id="preview-name">NAMA</div>
+                  <div class="jersey-preview-number" id="preview-number">00</div>
+                </div>
+                <div class="jersey-preview-desc">
+                  <strong>Preview Punggung Jersey</strong>
+                  Font official polyflex kualitas heat-press tahan panas dan cuci mesin.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Quantity Stepper & Action Buttons -->
+          <div style="margin-top: 24px;">
+            <label style="display:block; font-size:0.85rem; font-weight:700; text-transform:uppercase; margin-bottom:8px;">
+              Jumlah:
+            </label>
+            <div class="purchase-controls">
+              <div class="quantity-stepper">
+                <button type="button" id="qty-minus-btn" aria-label="Kurangi jumlah">&minus;</button>
+                <input type="number" id="quantity-input" name="quantity" value="1" min="1" max="99" readonly>
+                <button type="button" id="qty-plus-btn" aria-label="Tambah jumlah">&plus;</button>
+              </div>
+
+              <button type="submit" class="button button--dark" id="add-to-cart-btn">
+                <i data-lucide="shopping-bag" style="width: 18px;"></i> Tambah Ke Keranjang
+              </button>
+
+              <button type="button" class="button button--accent" id="buy-now-btn">
+                Beli Sekarang
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+      <section class="section" style="padding-top: 80px;">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">REKOMENDASI LAINNYA</span>
+            <h2>Produk Terkait</h2>
+          </div>
+          <a class="section-heading__link" href="{% url 'store:shop' %}?category={{ product.category.slug }}">
+            Lihat Kategori Ini <i data-lucide="arrow-right" style="width: 16px;"></i>
+          </a>
+        </div>
+
+        <div class="product-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+          {% for rel in related_products %}
+            <article class="product-card">
+              <a class="product-card__image" href="{% url 'store:product_detail' rel.slug %}">
+                {% if rel.image %}
+                  <img src="{{ rel.image.url }}" alt="{{ rel.name }}" loading="lazy">
+                {% else %}
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
+                    <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>
+                    <span style="font-size: 0.75rem; text-transform: uppercase;">Official Gear</span>
+                  </div>
+                {% endif %}
+              </a>
+              <div class="product-card__body">
+                <div class="product-card__category">{{ rel.category.name }}</div>
+                <h3 class="product-card__name">
+                  <a href="{% url 'store:product_detail' rel.slug %}">{{ rel.name }}</a>
+                </h3>
+                <div class="product-card__footer">
+                  <span class="product-card__price">Rp {{ rel.base_price|floatformat:0 }}</span>
+                  <a href="{% url 'store:product_detail' rel.slug %}" class="button button--outline" style="min-height: 38px; padding: 0 14px; font-size: 0.8rem;">
+                    Detail
+                  </a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Constant prices
+  const BASE_PRICE = {{ product.base_price|default:0 }};
+  const SABLON_FEE = {{ sablon_fee|default:75000 }};
+
+  // DOM Elements
+  const form = document.getElementById('add-to-cart-form');
+  const sizePills = document.querySelectorAll('.size-pill');
+  const selectedVariantInput = document.getElementById('selected-variant-id');
+  const sizeStatus = document.getElementById('size-status');
+  const sizeError = document.getElementById('size-error');
+
+  const sablonCheckbox = document.getElementById('sablon-checkbox');
+  const sablonHeader = document.getElementById('sablon-header-toggle');
+  const sablonCard = document.getElementById('sablon-card');
+  const sablonBody = document.getElementById('sablon-body');
+  const sablonFeeNote = document.getElementById('sablon-fee-note');
+  const totalUnitPriceDisplay = document.getElementById('total-unit-price-display');
+
+  const nameInput = document.getElementById('custom_name_input');
+  const numberInput = document.getElementById('custom_number_input');
+  const previewName = document.getElementById('preview-name');
+  const previewNumber = document.getElementById('preview-number');
+
+  const qtyInput = document.getElementById('quantity-input');
+  const qtyMinus = document.getElementById('qty-minus-btn');
+  const qtyPlus = document.getElementById('qty-plus-btn');
+
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
+  const buyNowBtn = document.getElementById('buy-now-btn');
+
+  // Format IDR Helper
+  function formatIDR(amount) {
+    return 'Rp ' + Number(amount).toLocaleString('id-ID');
+  }
+
+  // 1. Size Selection Logic
+  sizePills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      if (pill.classList.contains('disabled')) return;
+
+      sizePills.forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+
+      const variantId = pill.dataset.variantId;
+      const sizeVal = pill.dataset.size;
+      const stock = pill.dataset.stock;
+
+      selectedVariantInput.value = variantId;
+      sizeStatus.textContent = `Ukuran Terpilih: ${sizeVal} (Stok: ${stock})`;
+      sizeStatus.style.color = 'var(--color-primary)';
+      if (sizeError) sizeError.style.display = 'none';
+    });
+  });
+
+  // 2. Custom Sablon Toggle & Price Calculation Logic
+  function updateSablonState() {
+    const isChecked = sablonCheckbox.checked;
+
+    if (isChecked) {
+      sablonCard.classList.add('active');
+      sablonBody.classList.add('open');
+      sablonFeeNote.style.display = 'inline-block';
+      totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE + SABLON_FEE);
+      nameInput.focus();
+    } else {
+      sablonCard.classList.remove('active');
+      sablonBody.classList.remove('open');
+      sablonFeeNote.style.display = 'none';
+      totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE);
+    }
+  }
+
+  sablonHeader.addEventListener('click', (e) => {
+    if (e.target !== sablonCheckbox) {
+      sablonCheckbox.checked = !sablonCheckbox.checked;
+    }
+    updateSablonState();
+  });
+
+  sablonCheckbox.addEventListener('change', updateSablonState);
+
+  // 3. Live Jersey Mockup Typing Interaction
+  nameInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim().toUpperCase();
+    e.target.value = val;
+    previewName.textContent = val || 'NAMA';
+  });
+
+  numberInput.addEventListener('input', (e) => {
+    let val = e.target.value;
+    if (val !== '') {
+      val = Math.max(0, Math.min(99, parseInt(val) || 0));
+      e.target.value = val;
+      previewNumber.textContent = val;
+    } else {
+      previewNumber.textContent = '00';
+    }
+  });
+
+  // 4. Quantity Stepper Controls
+  qtyMinus.addEventListener('click', () => {
+    let current = parseInt(qtyInput.value) || 1;
+    if (current > 1) {
+      qtyInput.value = current - 1;
+    }
+  });
+
+  qtyPlus.addEventListener('click', () => {
+    let current = parseInt(qtyInput.value) || 1;
+    if (current < 99) {
+      qtyInput.value = current + 1;
+    }
+  });
+
+  // 5. AJAX Add to Cart & Sliding Drawer Trigger
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!selectedVariantInput.value) {
+      if (sizeError) sizeError.style.display = 'block';
+      sizePills[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    addToCartBtn.disabled = true;
+    addToCartBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Menambahkan...';
+    if (window.lucide) window.lucide.createIcons();
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+      });
+
+      if (response.status === 401) {
+        // Redirect to login if user not authenticated
+        const data = await response.json();
+        window.location.href = data.login_url + '?next=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Update Nav Badge
+        const navCount = document.getElementById('nav-cart-count');
+        const drawerCount = document.getElementById('drawer-cart-count');
+        if (navCount) navCount.textContent = data.cart_items_count;
+        if (drawerCount) drawerCount.textContent = data.cart_items_count;
+
+        // Show toast
+        if (window.showToast) {
+          window.showToast(data.message || 'Produk berhasil ditambahkan ke keranjang!', 'success');
+        }
+
+        // Open Sliding Cart Drawer
+        if (window.openCartDrawer) {
+          window.openCartDrawer();
+        }
+
+        // Refresh drawer content in background
+        fetch(window.location.href)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newDrawer = doc.getElementById('cart-drawer-items');
+            const newSubtotal = doc.getElementById('drawer-subtotal');
+            if (newDrawer) document.getElementById('cart-drawer-items').innerHTML = newDrawer.innerHTML;
+            if (newSubtotal) document.getElementById('drawer-subtotal').textContent = newSubtotal.textContent;
+            if (window.lucide) window.lucide.createIcons();
+          });
+      } else {
+        // Fallback standard submit
+        form.submit();
+      }
+    } catch (err) {
+      form.submit();
+    } finally {
+      addToCartBtn.disabled = false;
+      addToCartBtn.innerHTML = '<i data-lucide="shopping-bag" style="width: 18px;"></i> Tambah Ke Keranjang';
+      if (window.lucide) window.lucide.createIcons();
+    }
+  });
+
+  // Buy Now direct redirect
+  buyNowBtn.addEventListener('click', () => {
+    if (!selectedVariantInput.value) {
+      if (sizeError) sizeError.style.display = 'block';
+      sizePills[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // Submit normally so it adds to cart and proceeds
+    form.submit();
+  });
+});
+</script>
+{% endblock %}
+

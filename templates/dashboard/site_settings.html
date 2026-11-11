@@ -1,0 +1,103 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Pengaturan Website & Identitas{% endblock %}
+{% block page_title %}Pengaturan Website & Toko{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card" style="max-width: 860px; margin: 0 auto;">
+  <div class="admin-card__header">
+    <div>
+      <h3 class="admin-card__title">Identitas Brand & Konfigurasi Toko</h3>
+      <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--admin-text-muted);">
+        Kelola logo toko, kontak layanan pelanggan, dan tarif custom sablon.
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="admin-form-grid">
+      <!-- Logo Preview & Upload -->
+      <div class="form-group-full">
+        <label style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px;">
+          Logo Toko Saat Ini:
+        </label>
+        <div style="display: flex; align-items: center; gap: 24px; padding: 18px; background: var(--admin-bg); border: 1px dashed var(--admin-border); border-radius: 6px;">
+          <div style="width: 140px; height: 60px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 4px; display: flex; align-items: center; justify-content: center; padding: 6px;">
+            {% if setting.logo %}
+              <img src="{{ setting.logo.url }}" alt="Logo" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+            {% else %}
+              <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Logo Default" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <span style="display:none; font-family: var(--font-heading); font-weight: 800; font-size: 0.9rem;">HENDRA SPORT</span>
+            {% endif %}
+          </div>
+          <div style="flex: 1;">
+            <span style="font-size: 0.82rem; color: var(--admin-text-muted); display: block; margin-bottom: 8px;">
+              Pilih file gambar baru untuk mengganti logo brand (format disarankan: PNG transparan atau JPG).
+            </span>
+            {{ form.logo }}
+            {% if form.logo.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.logo.errors.0 }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Site Name -->
+      <div class="admin-field">
+        <label for="{{ form.site_name.id_for_label }}">{{ form.site_name.label }} *</label>
+        {{ form.site_name }}
+        {% if form.site_name.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.site_name.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Tagline -->
+      <div class="admin-field">
+        <label for="{{ form.tagline.id_for_label }}">{{ form.tagline.label }}</label>
+        {{ form.tagline }}
+        {% if form.tagline.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.tagline.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Contact Email -->
+      <div class="admin-field">
+        <label for="{{ form.contact_email.id_for_label }}">{{ form.contact_email.label }} *</label>
+        {{ form.contact_email }}
+        {% if form.contact_email.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.contact_email.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Contact Phone -->
+      <div class="admin-field">
+        <label for="{{ form.contact_phone.id_for_label }}">{{ form.contact_phone.label }} *</label>
+        {{ form.contact_phone }}
+        {% if form.contact_phone.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.contact_phone.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Sablon Flat Fee -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.sablon_fee.id_for_label }}">
+          <i data-lucide="sparkles" style="width: 14px; vertical-align: middle; color: var(--admin-sablon);"></i>
+          {{ form.sablon_fee.label }} *
+        </label>
+        {{ form.sablon_fee }}
+        <span style="font-size: 0.75rem; color: var(--admin-text-muted);">
+          Biaya ini otomatis ditambahkan ke harga jersey saat pelanggan mencentang fitur Custom Sablon.
+        </span>
+        {% if form.sablon_fee.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.sablon_fee.errors.0 }}</span>{% endif %}
+      </div>
+
+      <!-- Address -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.contact_address.id_for_label }}">{{ form.contact_address.label }}</label>
+        {{ form.contact_address }}
+        {% if form.contact_address.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.contact_address.errors.0 }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div style="padding: 16px 24px; background: var(--admin-bg); border-top: 1px solid var(--admin-border); display: flex; justify-content: flex-end; gap: 12px;">
+      <button type="submit" class="btn-admin btn-admin--accent">
+        <i data-lucide="check" style="width: 16px;"></i> Simpan Perubahan Pengaturan
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

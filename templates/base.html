@@ -1,0 +1,249 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hendra Sport - Toko perlengkapan olahraga & custom jersey sepak bola modern. Pilihan jersey terlengkap dengan sablon nama dan nomor punggung idamanmu.">
+  <title>{% block title %}Hendra Sport | Modern Sports & Custom Jersey{% endblock %}</title>
+
+  <!-- Typography: Barlow Condensed & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Minimalist Custom Vanilla CSS -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- Top Announcement Bar -->
+  <!-- <aside class="announcement-bar" aria-label="Pengumuman Promosi">
+    <!-- <div class="container">
+      PROMO SPESIAL JERSEY SEPAK BOLA 2024/2025 <span>• TERSEDIA CUSTOM SABLON NAMA & NOMOR</span>
+    </div> -->
+  <!-- </aside> --> 
+
+  <!-- Sticky Main Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar" aria-label="Navigasi Utama">
+        <!-- Brand Logo -->
+        <a class="brand-logo-slot" href="{% url 'store:home' %}" aria-label="Halaman Utama Hendra Sport">
+          <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Hendra Sport" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span style="display: none; font-weight: 800; letter-spacing: -0.03em;">HENDRA SPORT</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <div class="nav-menu" id="nav-menu">
+          <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'store:home' %}">Home</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'shop' and not request.GET.category %}active{% endif %}" href="{% url 'store:shop' %}">All Jerseys & Gear</a>
+          <div class="dropdown">
+            <button class="nav-dropdown-toggle" type="button" aria-expanded="false">
+              Kategori <i data-lucide="chevron-down" style="width: 15px; height: 15px;"></i>
+            </button>
+            <div class="dropdown__menu">
+              <a href="{% url 'store:shop' %}?category=football-jerseys">⚽ Football Jerseys</a>
+              <a href="{% url 'store:shop' %}?category=other-sports-jerseys">🏀 Other Sports Jerseys</a>
+              <a href="{% url 'store:shop' %}?category=sports-equipment">⚡ Sports Equipment</a>
+              <a href="{% url 'store:shop' %}?category=footwear-accessories">👟 Footwear & Accessories</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Icons: Search, Cart, Auth -->
+        <div class="nav-actions">
+          <button class="icon-button" id="search-toggle" type="button" aria-label="Cari Produk">
+            <i data-lucide="search"></i>
+          </button>
+
+          <!-- Sliding Cart Trigger -->
+          <button class="icon-button" id="cart-toggle-btn" type="button" aria-label="Buka Keranjang Belanja">
+            <i data-lucide="shopping-bag"></i>
+            <span class="cart-badge" id="nav-cart-count">{{ cart_items_count|default:0 }}</span>
+          </button>
+
+          <!-- Authentication Menu -->
+          {% if user.is_authenticated %}
+            <div class="nav-auth">
+              {% if user.is_staff %}
+                <a href="{% url 'dashboard:dashboard' %}" class="button button--accent" style="min-height: 34px; padding: 0 10px; font-size: 0.75rem;">
+                  <i data-lucide="layout-dashboard" style="width: 13px;"></i> Admin
+                </a>
+              {% endif %}
+              <span class="nav-user"><i data-lucide="user" style="width: 16px;"></i> {{ user.username }}</span>
+              <form method="post" action="{% url 'store:logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="button button--outline" style="min-height: 34px; padding: 0 10px; font-size: 0.75rem;">
+                  Logout
+                </button>
+              </form>
+            </div>
+          {% else %}
+            <div class="nav-auth">
+              <a href="{% url 'store:login' %}">Login</a>
+              <a href="{% url 'store:register' %}" class="button button--dark" style="min-height: 36px; padding: 0 14px; font-size: 0.8rem;">
+                Daftar
+              </a>
+            </div>
+          {% endif %}
+
+          <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Buka Menu Navigasi">
+            <i data-lucide="menu"></i>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flyout Search Bar -->
+  <div class="search-panel" id="search-panel">
+    <form class="container search-panel__inner" action="{% url 'store:shop' %}" method="get">
+      <label class="sr-only" for="global-search">Cari produk atau jersey</label>
+      <input id="global-search" type="search" name="q" placeholder="Cari klub sepak bola, jersey, nama produk, atau kategori..." value="{{ request.GET.q|default:'' }}">
+      <button class="button button--dark" type="submit">Cari</button>
+    </form>
+  </div>
+
+  <!-- Sliding Cart Drawer & Overlay -->
+  <div class="cart-drawer-overlay" id="cart-drawer-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Keranjang Belanja Geser">
+    <div class="cart-drawer__header">
+      <h3>Keranjang Belanja (<span id="drawer-cart-count">{{ cart_items_count|default:0 }}</span>)</h3>
+      <button class="icon-button" id="cart-drawer-close" type="button" aria-label="Tutup Keranjang">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="cart-drawer__items" id="cart-drawer-items">
+      {% if cart and cart.items.all %}
+        {% for item in cart.items.all %}
+          <div class="drawer-item" id="drawer-item-{{ item.id }}">
+            <div class="drawer-item__thumb">
+              {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+              {% else %}
+                <i data-lucide="shirt" style="width: 28px; height: 28px; color: var(--color-muted);"></i>
+              {% endif %}
+            </div>
+            <div class="drawer-item__details">
+              <a href="{% url 'store:product_detail' item.product.slug %}" class="drawer-item__title">
+                {{ item.product.name }}
+              </a>
+              <div class="drawer-item__meta">
+                Ukuran: <strong>{{ item.variant.size }}</strong> &bull; Qty: <strong>{{ item.quantity }}</strong>
+              </div>
+              {% if item.has_sablon %}
+                <div class="drawer-item__sablon">
+                  Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
+                </div>
+              {% endif %}
+              <div class="drawer-item__bottom">
+                <span class="drawer-item__price">Rp {{ item.line_total|floatformat:0 }}</span>
+                <form action="{% url 'store:remove_cart_item' item.id %}" method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="drawer-item__remove">Hapus</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="drawer-empty">
+          <i data-lucide="shopping-bag"></i>
+          <p>Keranjang belanja Anda masih kosong.</p>
+          <a href="{% url 'store:shop' %}" class="button button--dark" style="margin-top: 12px;" onclick="closeCartDrawer();">
+            Belanja Sekarang
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if cart and cart.items.all %}
+      <div class="cart-drawer__footer">
+        <div class="cart-drawer__subtotal">
+          <span>Subtotal:</span>
+          <strong id="drawer-subtotal">Rp {{ cart_total|floatformat:0 }}</strong>
+        </div>
+        <div class="cart-drawer__actions">
+          <a href="{% url 'store:cart' %}" class="button button--outline">Lihat Keranjang</a>
+          <a href="{% url 'store:checkout' %}" class="button button--accent">Checkout</a>
+        </div>
+      </div>
+    {% endif %}
+  </aside>
+
+  <!-- Flash / Toast Messages -->
+  {% if messages %}
+    <div class="container messages-container">
+      {% for message in messages %}
+        <div class="alert alert--{{ message.tags|default:'info' }}">
+          <span>{{ message }}</span>
+          <button type="button" onclick="this.parentElement.remove();" style="font-size: 1.2rem; line-height: 1;">&times;</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Main Dynamic Content Block -->
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Minimalist Sports Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>HENDRA SPORT</h3>
+          <p>Destinasi apparel dan jersey olahraga terpercaya dengan spesialisasi custom sablon nama dan nomor punggung berstandar jersey pro player.</p>
+          <p style="color: var(--color-accent); font-weight: 700; margin-top: 16px;">GEAR UP. PUSH YOUR LIMITS.</p>
+        </div>
+        <div class="footer-column">
+          <h4>Koleksi</h4>
+          <ul>
+            <li><a href="{% url 'store:shop' %}?category=football-jerseys">Football Jerseys</a></li>
+            <li><a href="{% url 'store:shop' %}?category=other-sports-jerseys">Basketball & Badminton</a></li>
+            <li><a href="{% url 'store:shop' %}?category=sports-equipment">Peralatan Olahraga</a></li>
+            <li><a href="{% url 'store:shop' %}">Semua Produk</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Layanan</h4>
+          <ul>
+            <li><a href="{% url 'store:shop' %}">Panduan Ukuran (S, M, L, XL)</a></li>
+            <li><a href="{% url 'store:shop' %}">Layanan Sablon Custom</a></li>
+            <li><a href="{% url 'store:cart' %}">Status Keranjang</a></li>
+            <li><a href="{% url 'store:login' %}">Akun Member</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Keunggulan</h4>
+          <ul>
+            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Bahan Breathable HEAT.RDY</li>
+            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Sablon Polyflex High-Grade</li>
+            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Jahitan Presisi & Kuat</li>
+            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Garansi Kepuasan Pelanggan</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 Hendra Sport Indonesia. Seluruh hak cipta dilindungi.</div>
+        <div>Minimalist Sports Apparel & Custom Football Jersey</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Root -->
+  <div id="toast-root" aria-live="polite"></div>
+
+  <!-- Main Storefront JavaScript -->
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
+

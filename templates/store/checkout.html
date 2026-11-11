@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout & Pengiriman | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+  <div class="container">
+    <div class="section-heading" style="margin-bottom: 32px;">
+      <div>
+        <span class="eyebrow">FINALISASI TRANSAKSI</span>
+        <h2>Checkout Pesanan</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:cart' %}">
+        <i data-lucide="arrow-left" style="width: 16px;"></i> Kembali Ke Keranjang
+      </a>
+    </div>
+
+    <div class="checkout-grid">
+      <!-- Left Column: Shipping Form & Payment Selection -->
+      <div class="checkout-form-area">
+        <form method="post" action="{% url 'store:checkout' %}" id="checkout-form">
+          {% csrf_token %}
+
+          <div class="checkout-card" style="margin-bottom: 24px;">
+            <h3>
+              <i data-lucide="map-pin" style="color: var(--color-accent); width: 22px;"></i>
+              Informasi Pengiriman
+            </h3>
+
+            <div class="form-group-grid">
+              <div class="form-group">
+                <label for="full_name">Nama Penerima *</label>
+                <input 
+                  type="text" 
+                  id="full_name" 
+                  name="full_name" 
+                  required 
+                  placeholder="Contoh: Hendra Wijaya"
+                  value="{{ user.get_full_name|default:user.username }}"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Nomor Telepon / WhatsApp *</label>
+                <input 
+                  type="tel" 
+                  id="phone" 
+                  name="phone" 
+                  required 
+                  placeholder="081234567890"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="city">Kota / Kabupaten & Kode Pos *</label>
+              <input 
+                type="text" 
+                id="city" 
+                name="city" 
+                required 
+                placeholder="Contoh: Jakarta Selatan, DKI Jakarta 12190"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="address">Alamat Lengkap Pengiriman *</label>
+              <textarea 
+                id="address" 
+                name="address" 
+                required 
+                placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, patokan lokasi..."
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Payment Method Selection Preview -->
+          <div class="checkout-card" style="margin-bottom: 24px;">
+            <h3>
+              <i data-lucide="credit-card" style="color: var(--color-accent); width: 22px;"></i>
+              Metode Pembayaran
+            </h3>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <label style="display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--color-primary); border-radius:var(--radius-sm); cursor:pointer; background:var(--color-soft);">
+                <input type="radio" name="payment_method" value="va" checked style="accent-color:var(--color-primary);">
+                <div style="flex:1;">
+                  <strong style="display:block; font-size:0.92rem;">Bank Transfer / Virtual Account (Otomatis)</strong>
+                  <span style="font-size:0.78rem; color:var(--color-muted);">BCA, Mandiri, BNI, BRI (Dicek Otomatis 24 Jam)</span>
+                </div>
+                <i data-lucide="check-circle-2" style="color:var(--color-success); width:18px;"></i>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;">
+                <input type="radio" name="payment_method" value="qris" style="accent-color:var(--color-primary);">
+                <div style="flex:1;">
+                  <strong style="display:block; font-size:0.92rem;">QRIS Instant Pay</strong>
+                  <span style="font-size:0.78rem; color:var(--color-muted);">Gopay, OVO, Dana, ShopeePay, LinkAja</span>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;">
+                <input type="radio" name="payment_method" value="cod" style="accent-color:var(--color-primary);">
+                <div style="flex:1;">
+                  <strong style="display:block; font-size:0.92rem;">Cash on Delivery (COD)</strong>
+                  <span style="font-size:0.78rem; color:var(--color-muted);">Bayar tunai kepada kurir saat pesanan sampai</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="button button--accent" style="width: 100%; min-height: 52px; font-size: 1.05rem;">
+            <i data-lucide="lock" style="width: 18px;"></i> Buat Pesanan Sekarang &bull; Rp {{ cart.total|floatformat:0 }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Right Column: Order Summary & Item Review -->
+      <aside class="summary-box" aria-label="Rincian Checkout">
+        <h3>Ringkasan Item ({{ items|length }})</h3>
+
+        <div style="max-height: 380px; overflow-y: auto; margin-bottom: 16px;">
+          {% for item in items %}
+            <div class="checkout-item-compact">
+              <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                <div style="width:48px; height:48px; background:var(--color-soft); border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width:100%; height:100%; object-fit:cover;">
+                  {% else %}
+                    <i data-lucide="shirt" style="width:24px; color:var(--color-muted);"></i>
+                  {% endif %}
+                </div>
+                <div>
+                  <strong style="display:block; font-size:0.85rem; line-height:1.2;">{{ item.product.name }}</strong>
+                  <span style="font-size:0.75rem; color:var(--color-muted);">Ukuran: {{ item.variant.size }} &bull; Qty: {{ item.quantity }}</span>
+                  {% if item.has_sablon %}
+                    <div style="font-size:0.72rem; color:#0284c7; font-weight:700;">
+                      Sablon: {{ item.custom_name }} #{{ item.custom_number }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <strong style="font-size:0.9rem; white-space:nowrap;">Rp {{ item.line_total|floatformat:0 }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="summary-rows">
+          <div class="summary-line">
+            <span>Subtotal Produk</span>
+            <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+          </div>
+          <div class="summary-line">
+            <span>Ongkos Kirim</span>
+            <span class="badge-tag badge-tag--stock" style="font-size: 0.72rem;">GRATIS PROMO</span>
+          </div>
+          <div class="summary-line">
+            <span>Asuransi Pengiriman</span>
+            <span style="color:var(--color-success); font-weight:700;">Gratis</span>
+          </div>
+
+          <div class="summary-total-line">
+            <span>Total Tagihan:</span>
+            <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+          </div>
+        </div>
+
+        <div style="padding:12px; background:var(--color-soft); border-radius:var(--radius-sm); border:1px solid var(--color-border); font-size:0.78rem; color:var(--color-muted); display:flex; gap:10px; align-items:center;">
+          <i data-lucide="sparkles" style="color:var(--color-accent); width:20px; flex-shrink:0;"></i>
+          <span>Setiap sablon diproses dengan mesin heat-press industri untuk ketahanan dan presisi maksimal.</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

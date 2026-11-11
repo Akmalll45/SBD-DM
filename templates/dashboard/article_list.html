@@ -1,0 +1,98 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Kelola Artikel & Berita{% endblock %}
+{% block page_title %}CMS Berita & Artikel Olahraga{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+  <div class="admin-card__header">
+    <h3 class="admin-card__title">Daftar Publikasi Artikel</h3>
+    <a href="{% url 'dashboard:article_create' %}" class="btn-admin btn-admin--accent">
+      <i data-lucide="plus" style="width: 16px;"></i> Tulis Artikel Baru
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Cover</th>
+          <th>Judul & Excerpt</th>
+          <th>Slug</th>
+          <th>Tanggal Dibuat</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for article in articles %}
+          <tr>
+            <td style="width: 68px;">
+              <div style="width: 60px; height: 42px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                {% if article.cover_image %}
+                  <img src="{{ article.cover_image.url }}" alt="{{ article.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                  <i data-lucide="image" style="width: 20px; color: var(--admin-text-muted);"></i>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <strong style="display: block; font-size: 0.95rem; color: var(--admin-text-main);">
+                {{ article.title }}
+              </strong>
+              {% if article.excerpt %}
+                <span style="font-size: 0.75rem; color: var(--admin-text-muted);">
+                  {{ article.excerpt|truncatewords:10 }}
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <code style="font-size: 0.8rem; background: var(--admin-bg); padding: 2px 6px; border-radius: 4px;">
+                {{ article.slug }}
+              </code>
+            </td>
+            <td>
+              <span style="font-size: 0.82rem; color: var(--admin-text-muted);">
+                {{ article.created_at|date:"d M Y" }}
+              </span>
+            </td>
+            <td>
+              {% if article.is_published %}
+                <span style="color: var(--admin-success); font-weight: 700; font-size: 0.75rem; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                  Published
+                </span>
+              {% else %}
+                <span style="color: var(--admin-warning); font-size: 0.75rem; background: #fffbeb; padding: 2px 8px; border-radius: 4px; border: 1px solid #fde68a;">
+                  Draft
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="{% url 'dashboard:article_edit' article.id %}" class="btn-admin btn-admin--outline btn-admin--sm">
+                  <i data-lucide="edit-3" style="width: 13px;"></i> Edit
+                </a>
+                <form action="{% url 'dashboard:article_delete' article.id %}" method="post" onsubmit="return confirm('Hapus artikel ini?');" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-admin btn-admin--danger btn-admin--sm">
+                    <i data-lucide="trash-2" style="width: 13px;"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+              <i data-lucide="newspaper" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
+              <div>Belum ada artikel yang dibuat. Klik "Tulis Artikel Baru" untuk memulai.</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
