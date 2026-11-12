@@ -72,6 +72,24 @@
         {% if form.image.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.image.errors.0 }}</span>{% endif %}
       </div>
 
+      <!-- Back Image Upload & Preview -->
+      <div class="admin-field form-group-full">
+        <label for="{{ form.back_image.id_for_label }}">{{ form.back_image.label }}</label>
+        {% if not is_create and product.back_image %}
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
+            <div style="width: 72px; height: 72px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; overflow: hidden;">
+              <img src="{{ product.back_image.url }}" alt="Punggung {{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <span style="font-size: 0.8rem; color: var(--admin-text-muted);">Foto punggung saat ini. Pilih file baru untuk mengganti.</span>
+          </div>
+        {% endif %}
+        {{ form.back_image }}
+        <span style="font-size: 0.72rem; color: var(--admin-text-muted);">
+          Opsional. Dipakai sebagai latar preview nama &amp; nomor punggung di halaman detail. Jika kosong, foto produk dipakai sebagai gantinya.
+        </span>
+        {% if form.back_image.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.back_image.errors.0 }}</span>{% endif %}
+      </div>
+
       <!-- Description -->
       <div class="admin-field form-group-full">
         <label for="{{ form.description.id_for_label }}">{{ form.description.label }} *</label>

@@ -75,26 +75,41 @@
 
     <div class="category-grid">
       {% for category in categories %}
-        <a class="category-card" href="{% url 'store:shop' %}?category={{ category.slug }}">
-          <div class="category-card__bg"></div>
-          <h3 class="category-card__title">{{ category.name }}</h3>
+        <a class="category-card" href="{% url 'store:shop' %}?category={{ category.slug }}" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
+          {% if category.image %}
+            <img class="category-card__img" src="{{ category.image.url }}" alt="{{ category.name }}" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          {% else %}
+            <img class="category-card__img"
+                 src="{% static 'images/categories/' %}{{ category.slug }}.jpg"
+                 alt="{{ category.name }}"
+                 loading="lazy"
+                 data-fallback-src="{% static 'images/categories/' %}{{ category.slug }}.svg"
+                 onerror="this.onerror=null; this.src=this.dataset.fallbackSrc;"
+                 style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          {% endif %}
+          <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+          <h3 class="category-card__title" style="position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; margin: 0;">{{ category.name }}</h3>
         </a>
       {% empty %}
-        <a class="category-card" href="{% url 'store:shop' %}?category=football-jerseys">
-          <div class="category-card__bg"></div>
-          <h3 class="category-card__title">Football Jerseys</h3>
+        <a class="category-card" href="{% url 'store:shop' %}?category=football-jerseys" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
+          <img class="category-card__img" src="{% static 'images/categories/football-jerseys.svg' %}" alt="Football Jerseys" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+          <h3 class="category-card__title" style="position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; margin: 0;">Football Jerseys</h3>
         </a>
-        <a class="category-card" href="{% url 'store:shop' %}?category=other-sports-jerseys">
-          <div class="category-card__bg"></div>
-          <h3 class="category-card__title">Other Sports</h3>
+        <a class="category-card" href="{% url 'store:shop' %}?category=other-sports-jerseys" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
+          <img class="category-card__img" src="{% static 'images/categories/other-sports-jerseys.svg' %}" alt="Other Sports" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+          <h3 class="category-card__title" style="position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; margin: 0;">Other Sports</h3>
         </a>
-        <a class="category-card" href="{% url 'store:shop' %}?category=sports-equipment">
-          <div class="category-card__bg"></div>
-          <h3 class="category-card__title">Sports Equipment</h3>
+        <a class="category-card" href="{% url 'store:shop' %}?category=sports-equipment" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
+          <img class="category-card__img" src="{% static 'images/categories/sports-equipment.svg' %}" alt="Sports Equipment" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+          <h3 class="category-card__title" style="position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; margin: 0;">Sports Equipment</h3>
         </a>
-        <a class="category-card" href="{% url 'store:shop' %}">
-          <div class="category-card__bg"></div>
-          <h3 class="category-card__title">All Gear</h3>
+        <a class="category-card" href="{% url 'store:shop' %}?category=footwear-accessories" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
+          <img class="category-card__img" src="{% static 'images/categories/footwear-accessories.svg' %}" alt="Footwear & Accessories" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+          <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+          <h3 class="category-card__title" style="position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; margin: 0;">Footwear & Accessories</h3>
         </a>
       {% endfor %}
     </div>

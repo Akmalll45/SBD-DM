@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Pesanan Saya | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container">
+    <div class="account-page-heading">
+      <p class="eyebrow">AKUN SAYA</p>
+      <h1>Pesanan Saya</h1>
+      <p>Pantau status, detail, dan pelacakan pesananmu.</p>
+    </div>
+    <nav class="order-filter-tabs" aria-label="Filter status pesanan">
+      <a class="{% if not selected_status %}active{% endif %}" href="{% url 'accounts:orders' %}">Semua</a>
+      {% for value, label in status_choices %}
+        <a class="{% if selected_status == value %}active{% endif %}" href="{% url 'accounts:orders' %}?status={{ value }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="account-panel">
+      {% for order in page_obj %}
+        <div class="account-order-row">
+          <span><strong>Pesanan #{{ order.id }}</strong><small>{{ order.created_at|date:"d M Y, H:i" }} · {{ order.item_count }} item</small></span>
+          <span class="account-order-row__summary"><strong>Rp {{ order.total|floatformat:0|intcomma }}</strong><small class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</small></span>
+          <a class="button button--outline account-order-row__action" href="{% url 'accounts:order_detail' order.id %}">Detail</a>
+        </div>
+      {% empty %}
+        <div class="account-empty">
+          <i data-lucide="package-open"></i>
+          <p>{% if selected_status %}Tidak ada pesanan dengan status ini.{% else %}Kamu belum memiliki pesanan.{% endif %}</p>
+          <a class="button button--accent" href="{% url 'store:shop' %}">Belanja Sekarang</a>
+        </div>
+      {% endfor %}
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="account-pagination" aria-label="Halaman pesanan">
+        {% if page_obj.has_previous %}<a href="?status={{ selected_status }}&page={{ page_obj.previous_page_number }}">Sebelumnya</a>{% endif %}
+        <span>Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?status={{ selected_status }}&page={{ page_obj.next_page_number }}">Berikutnya</a>{% endif %}
+      </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

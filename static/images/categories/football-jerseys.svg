@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <radialGradient id="glow" cx="65%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ff5500" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ff5500" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="jerseyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff5500" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dark Atmospheric Background -->
+  <rect width="600" height="400" fill="url(#bgGrad)" />
+  <rect width="600" height="400" fill="url(#glow)" />
+
+  <!-- Stadium Pitch Grid Lines & Texture -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1.5">
+    <circle cx="300" cy="200" r="140" fill="none" />
+    <line x1="300" y1="0" x2="300" y2="400" />
+    <line x1="0" y1="200" x2="600" y2="200" />
+    <path d="M 0,50 L 600,350 M 0,350 L 600,50" />
+  </g>
+
+  <!-- Football Jersey Silhouette Graphic -->
+  <g transform="translate(180, 50)" filter="drop-shadow(0 15px 25px rgba(0,0,0,0.6))">
+    <!-- Jersey Body -->
+    <path d="M 70,20 L 30,55 L 5,120 L 50,140 L 65,100 L 65,260 L 175,260 L 175,100 L 190,140 L 235,120 L 210,55 L 170,20 C 150,45 90,45 70,20 Z" 
+          fill="url(#jerseyGrad)" />
+    <!-- Collar & Trim -->
+    <path d="M 70,20 C 90,45 150,45 170,20 C 155,55 85,55 70,20 Z" fill="#0f172a" />
+    <path d="M 5,120 L 50,140 L 45,125 L 15,110 Z" fill="#ffffff" opacity="0.4" />
+    <path d="M 235,120 L 190,140 L 195,125 L 225,110 Z" fill="#ffffff" opacity="0.4" />
+
+    <!-- Jersey Number 10 Silhouette -->
+    <text x="120" y="180" font-family="'Barlow Condensed', Impact, sans-serif" font-size="80" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2" opacity="0.95">10</text>
+    <text x="120" y="105" font-family="'Inter', sans-serif" font-size="16" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="4" opacity="0.8">HENDRA</text>
+  </g>
+
+  <!-- Football Motif Icon -->
+  <g transform="translate(420, 240) scale(0.65)" opacity="0.25">
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#ffffff" stroke-width="6" />
+    <polygon points="100,60 135,85 122,125 78,125 65,85" fill="#ffffff" />
+  </g>
+</svg>

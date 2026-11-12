@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Akun Saya | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container">
+    <div class="account-welcome">
+      <div class="account-avatar">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="Foto profil {{ user.username }}">
+        {% else %}
+          <span>{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <p class="eyebrow">AKUN HENDRA SPORT</p>
+        <h1>Halo, {{ user.first_name|default:user.username }}</h1>
+        <p>Kelola profil dan pantau pesanan jersey favoritmu.</p>
+      </div>
+    </div>
+
+    <div class="account-stat-grid">
+      <a class="account-stat" href="{% url 'accounts:orders' %}?status=pending">
+        <span>Menunggu Bayar</span><strong>{{ pending_count }}</strong>
+      </a>
+      <a class="account-stat" href="{% url 'accounts:orders' %}?status=processing">
+        <span>Diproses</span><strong>{{ processing_count }}</strong>
+      </a>
+      <a class="account-stat" href="{% url 'accounts:orders' %}?status=shipped">
+        <span>Dikirim</span><strong>{{ shipped_count }}</strong>
+      </a>
+      <a class="account-stat" href="{% url 'accounts:orders' %}?status=completed">
+        <span>Selesai</span><strong>{{ completed_count }}</strong>
+      </a>
+    </div>
+
+    <div class="account-panel">
+      <div class="account-panel__heading">
+        <div><p class="eyebrow">RIWAYAT TERBARU</p><h2>Pesanan Saya</h2></div>
+        <a class="button button--outline" href="{% url 'accounts:orders' %}">Semua Pesanan</a>
+      </div>
+      {% for order in recent_orders %}
+        <a class="account-order-row" href="{% url 'accounts:order_detail' order.id %}">
+          <span><strong>Pesanan #{{ order.id }}</strong><small>{{ order.created_at|date:"d M Y, H:i" }} · {{ order.item_count }} item</small></span>
+          <span><strong>Rp {{ order.total|floatformat:0|intcomma }}</strong><small class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</small></span>
+        </a>
+      {% empty %}
+        <div class="account-empty">
+          <p>Belum ada pesanan. Mulai jelajahi koleksi Hendra Sport.</p>
+          <a class="button button--accent" href="{% url 'store:shop' %}">Belanja Sekarang</a>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="account-shortcuts">
+      <a href="{% url 'accounts:profile' %}"><i data-lucide="user-round"></i><span><strong>Profil Saya</strong><small>Perbarui data dan alamat</small></span><i data-lucide="arrow-right"></i></a>
+      <a href="{% url 'accounts:orders' %}"><i data-lucide="package"></i><span><strong>Pesanan Saya</strong><small>Lihat status dan pelacakan</small></span><i data-lucide="arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+{% endblock %}

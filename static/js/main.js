@@ -18,6 +18,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Accessible click/touch behavior for navigation dropdowns
+  const dropdownToggles = document.querySelectorAll('.dropdown > .nav-dropdown-toggle');
+  dropdownToggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const dropdown = toggle.parentElement;
+      const isOpen = dropdown.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    document.querySelectorAll('.dropdown.open').forEach((dropdown) => {
+      if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+        const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-copy-value]').forEach((button) => {
+    button.addEventListener('click', () => {
+      navigator.clipboard.writeText(button.dataset.copyValue)
+        .then(() => { button.textContent = 'Tersalin'; })
+        .catch(() => { button.textContent = 'Gagal menyalin'; });
+    });
+  });
+
   // Search Panel Toggle
   const searchToggle = document.getElementById('search-toggle');
   const searchPanel = document.getElementById('search-panel');

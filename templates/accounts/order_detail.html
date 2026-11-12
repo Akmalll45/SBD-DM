@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load humanize static %}
+
+{% block title %}Pesanan #{{ order.id }} | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container">
+    <a class="account-back-link" href="{% url 'accounts:orders' %}"><i data-lucide="arrow-left"></i> Kembali ke pesanan</a>
+    <div class="order-detail-heading">
+      <div><p class="eyebrow">DETAIL PESANAN</p><h1>Pesanan #{{ order.id }}</h1><p>Dibuat {{ order.created_at|date:"d M Y, H:i" }}</p></div>
+      <span class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</span>
+    </div>
+
+    <div class="account-panel tracking-panel">
+      {% if order.status == 'cancelled' %}
+        <div class="tracking-cancelled"><i data-lucide="circle-x"></i><div><strong>Pesanan dibatalkan</strong><p>Pesanan ini tidak lagi diproses.</p></div></div>
+      {% else %}
+        <div class="tracking-steps">
+          {% for step in steps %}
+            <div class="tracking-step {% if forloop.counter0 < current_step %}complete{% elif forloop.counter0 == current_step %}current{% endif %}">
+              <span class="tracking-step__dot"></span><strong>{{ step.label }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if order.courier or order.tracking_number %}
+        <div class="tracking-shipment">
+          {% if order.courier %}<span><small>Kurir</small><strong>{{ order.courier }}</strong></span>{% endif %}
+          {% if order.tracking_number %}
+            <span><small>Nomor resi</small><strong>{{ order.tracking_number }}</strong></span>
+            <button type="button" class="button button--outline" data-copy-value="{{ order.tracking_number }}">Salin Resi</button>
+          {% endif %}
+        </div>
+      {% endif %}
+      <div class="tracking-history">
+        <h2>Riwayat Status</h2>
+        {% for event in history %}
+          <div class="tracking-event"><span></span><div><strong>{{ event.get_status_display }}</strong>{% if event.note %}<p>{{ event.note }}</p>{% endif %}<small>{{ event.created_at|date:"d M Y, H:i" }}</small></div></div>
+        {% empty %}
+          <div class="tracking-event"><span></span><div><strong>Menunggu Pembayaran</strong><p>Pesanan dibuat</p><small>{{ order.created_at|date:"d M Y, H:i" }}</small></div></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="order-detail-grid">
+      <div class="account-panel">
+        <h2>Item Pesanan</h2>
+        {% for item in items %}
+          <div class="order-item-row">
+            {% if item.product.display_image %}
+              <img src="{{ item.product.display_image.url }}" alt="{{ item.product_name }}">
+            {% else %}
+              <img src="{% static 'images/categories/football-jerseys.svg' %}" alt="">
+            {% endif %}
+            <div class="order-item-row__details">
+              <strong>{{ item.product_name }}</strong>
+              <small>Ukuran {{ item.size|default:"-" }} · Qty {{ item.quantity }}</small>
+              {% if item.has_sablon %}<small>Sablon: {{ item.custom_name }}{% if item.custom_number != None %} #{{ item.custom_number }}{% endif %}</small>{% endif %}
+            </div>
+            <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
+          </div>
+        {% endfor %}
+        <div class="order-price-breakdown">
+          <span>Harga item</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong>
+          <span>Biaya sablon</span><strong>Rp {{ print_total|floatformat:0|intcomma }}</strong>
+          <span class="order-price-breakdown__total">Total</span><strong class="order-price-breakdown__total">Rp {{ order.total|floatformat:0|intcomma }}</strong>
+        </div>
+      </div>
+      <div class="account-panel">
+        <h2>Alamat Pengiriman</h2>
+        <div class="shipping-address">
+          <strong>{{ order.full_name }}</strong><span>{{ order.phone }}</span>
+          <p>{{ order.address }}<br>{{ order.city }}</p>
+        </div>
+        {% if order.status == 'pending' %}
+          <form method="post" action="{% url 'accounts:cancel_order' order.id %}" onsubmit="return confirm('Yakin ingin membatalkan pesanan ini?');">
+            {% csrf_token %}
+            <button class="button button--outline button--danger" type="submit">Batalkan Pesanan</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

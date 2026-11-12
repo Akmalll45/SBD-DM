@@ -51,6 +51,18 @@ class Product(models.Model):
     def display_image(self):
         return self.front_image or self.image
 
+    @property
+    def back_preview_image(self):
+        """Foto yang dipakai untuk preview sablon nama & nomor punggung.
+
+        Prioritas: foto punggung asli -> foto depan/utama (fallback).
+        """
+        return self.back_image or self.display_image
+
+    @property
+    def has_back_image(self):
+        return bool(self.back_image)
+
 
 class ProductVariant(models.Model):
     class Size(models.TextChoices):

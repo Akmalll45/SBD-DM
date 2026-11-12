@@ -109,6 +109,7 @@ class ProductForm(forms.ModelForm):
             'base_price',
             'description',
             'image',
+            'back_image',
             'is_featured',
         ]
         widgets = {
@@ -117,6 +118,7 @@ class ProductForm(forms.ModelForm):
             'base_price': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': '849000'}),
             'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 4, 'placeholder': 'Deskripsi bahan, spesifikasi, dan keunggulan jersey...'}),
             'image': forms.FileInput(attrs={'class': 'form-file-input', 'accept': 'image/*'}),
+            'back_image': forms.FileInput(attrs={'class': 'form-file-input', 'accept': 'image/*'}),
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
         labels = {
@@ -126,6 +128,7 @@ class ProductForm(forms.ModelForm):
             'base_price': 'Harga Dasar (Rp)',
             'description': 'Deskripsi Lengkap',
             'image': 'Foto Produk',
+            'back_image': 'Foto Punggung Jersey (untuk preview nama & nomor)',
             'is_featured': 'Tampilkan di Bagian Featured (Beranda)',
         }
 

@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Minimalist Custom Vanilla CSS -->
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.2">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -70,18 +70,23 @@
           <!-- Authentication Menu -->
           {% if user.is_authenticated %}
             <div class="nav-auth">
-              {% if user.is_staff %}
-                <a href="{% url 'dashboard:dashboard' %}" class="button button--accent" style="min-height: 34px; padding: 0 10px; font-size: 0.75rem;">
-                  <i data-lucide="layout-dashboard" style="width: 13px;"></i> Admin
-                </a>
-              {% endif %}
-              <span class="nav-user"><i data-lucide="user" style="width: 16px;"></i> {{ user.username }}</span>
-              <form method="post" action="{% url 'store:logout' %}" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="button button--outline" style="min-height: 34px; padding: 0 10px; font-size: 0.75rem;">
-                  Logout
+              <div class="dropdown account-dropdown">
+                <button class="nav-dropdown-toggle nav-user" type="button" aria-expanded="false" aria-haspopup="true">
+                  <i data-lucide="user" style="width: 16px;"></i> {{ user.username }}
+                  <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
                 </button>
-              </form>
+                <div class="dropdown__menu account-dropdown__menu">
+                  <a href="{% url 'accounts:profile' %}">Profil Saya</a>
+                  <a href="{% url 'accounts:orders' %}">Pesanan Saya</a>
+                  {% if user.is_staff %}
+                    <a href="{% url 'dashboard:dashboard' %}">Panel</a>
+                  {% endif %}
+                  <form method="post" action="{% url 'store:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="account-dropdown__logout">Logout</button>
+                  </form>
+                </div>
+              </div>
             </div>
           {% else %}
             <div class="nav-auth">

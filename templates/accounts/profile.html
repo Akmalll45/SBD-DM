@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil Saya | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container account-narrow">
+    <div class="account-page-heading">
+      <p class="eyebrow">AKUN SAYA</p>
+      <h1>Profil Saya</h1>
+      <p>Pastikan informasi kontak dan alamatmu selalu terbaru.</p>
+    </div>
+    <form class="account-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="profile-avatar-editor">
+        <div class="account-avatar account-avatar--large">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Foto profil">
+          {% else %}
+            <span>{{ avatar_initial }}</span>
+          {% endif %}
+        </div>
+        <div>
+          <strong>Foto profil</strong>
+          <p>Format gambar umum, maksimal 2 MB.</p>
+          {% if profile.avatar %}
+            <label class="account-checkbox"><input type="checkbox" name="{{ form.remove_avatar.name }}" id="{{ form.remove_avatar.id_for_label }}"> Hapus foto</label>
+          {% endif %}
+        </div>
+      </div>
+      {% for field in form %}
+        {% if field.name != 'remove_avatar' %}
+          <div class="account-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div class="account-form__actions">
+        <a class="button button--outline" href="{% url 'accounts:dashboard' %}">Kembali</a>
+        <button class="button button--accent" type="submit">Simpan Profil</button>
+      </div>
+      <a class="account-muted-link" href="{% url 'accounts:password' %}">Ubah kata sandi</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

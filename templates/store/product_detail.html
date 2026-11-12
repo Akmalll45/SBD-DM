@@ -98,7 +98,13 @@
         </div>
 
         <!-- Purchase & Customization Form -->
-        <form id="add-to-cart-form" action="{% url 'store:add_to_cart' product.id %}" method="post">
+        <form
+          id="add-to-cart-form"
+          action="{% url 'store:add_to_cart' product.id %}"
+          method="post"
+          data-base-price="{{ product.base_price|default:0 }}"
+          data-sablon-fee="{{ sablon_fee|default:75000 }}"
+        >
           {% csrf_token %}
           <input type="hidden" name="variant_id" id="selected-variant-id" required>
 
@@ -154,39 +160,73 @@
             <div class="sablon-card__body" id="sablon-body">
               <div class="sablon-inputs-grid">
                 <div class="field-item">
-                  <label for="custom_name_input">Nama Punggung (Maks. 16 Huruf)</label>
-                  <input 
-                    type="text" 
-                    id="custom_name_input" 
-                    name="custom_name" 
-                    maxlength="16" 
-                    placeholder="CONTOH: RONALDO" 
+                  <label for="custom_name_input">Nama Punggung</label>
+                  <input
+                    type="text"
+                    id="custom_name_input"
+                    name="custom_name"
+                    maxlength="16"
+                    placeholder="CONTOH: RONALDO"
                     autocomplete="off"
+                    spellcheck="false"
+                    aria-describedby="custom_name_hint"
                   >
+                  <div class="field-hint" id="custom_name_hint">
+                    <span>Maks. 16 huruf</span>
+                    <span id="name-counter">0/16</span>
+                  </div>
                 </div>
                 <div class="field-item">
-                  <label for="custom_number_input">Nomor Punggung (0 - 99)</label>
-                  <input 
-                    type="number" 
-                    id="custom_number_input" 
-                    name="custom_number" 
-                    min="0" 
-                    max="99" 
-                    placeholder="7"
+                  <label for="custom_number_input">Nomor Punggung</label>
+                  <input
+                    type="number"
+                    id="custom_number_input"
+                    name="custom_number"
+                    min="0"
+                    max="99"
+                    inputmode="numeric"
+                    placeholder="CONTOH: 7"
+                    autocomplete="off"
+                    aria-describedby="custom_number_hint"
                   >
+                  <div class="field-hint" id="custom_number_hint">
+                    <span>Angka 0 - 99</span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Live Jersey Back Mockup Preview -->
+              <!-- Live Jersey Back Preview (foto jersey asli) -->
               <div class="jersey-live-preview">
-                <div class="jersey-back-art">
-                  <div class="jersey-collar-shape"></div>
-                  <div class="jersey-preview-name" id="preview-name">NAMA</div>
-                  <div class="jersey-preview-number" id="preview-number">00</div>
+                <div class="jersey-back-art" id="jersey-back-art">
+                  {% with back_img=product.back_preview_image %}
+                    {% if back_img %}
+                      <img
+                        id="jersey-back-img"
+                        src="{{ back_img.url }}"
+                        alt="Preview punggung {{ product.name }}"
+                        {% if not product.has_back_image %}class="is-front-fallback"{% endif %}
+                      >
+                    {% else %}
+                      <div class="jersey-back-empty">
+                        <i data-lucide="shirt"></i>
+                      </div>
+                    {% endif %}
+                  {% endwith %}
+                  <div class="jersey-print">
+                    <div class="jersey-preview-name is-placeholder" id="preview-name">NAMA</div>
+                    <div class="jersey-preview-number is-placeholder" id="preview-number">00</div>
+                  </div>
                 </div>
                 <div class="jersey-preview-desc">
                   <strong>Preview Punggung Jersey</strong>
-                  Font official polyflex kualitas heat-press tahan panas dan cuci mesin.
+                  <p>Tampilan nama &amp; nomor langsung berubah sesuai yang kamu ketik.</p>
+                  <p>Font official polyflex kualitas heat-press, tahan panas dan cuci mesin.</p>
+                  {% if not product.has_back_image %}
+                    <p class="jersey-preview-note">
+                      <i data-lucide="info"></i>
+                      Foto punggung belum tersedia, posisi sablon hanya ilustrasi.
+                    </p>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -267,12 +307,11 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Constant prices
-  const BASE_PRICE = {{ product.base_price|default:0 }};
-  const SABLON_FEE = {{ sablon_fee|default:75000 }};
+  const form = document.getElementById('add-to-cart-form');
+  const BASE_PRICE = Number(form.dataset.basePrice);
+  const SABLON_FEE = Number(form.dataset.sablonFee);
 
   // DOM Elements
-  const form = document.getElementById('add-to-cart-form');
   const sizePills = document.querySelectorAll('.size-pill');
   const selectedVariantInput = document.getElementById('selected-variant-id');
   const sizeStatus = document.getElementById('size-status');
@@ -348,22 +387,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
   sablonCheckbox.addEventListener('change', updateSablonState);
 
-  // 3. Live Jersey Mockup Typing Interaction
-  nameInput.addEventListener('input', (e) => {
-    const val = e.target.value.trim().toUpperCase();
-    e.target.value = val;
-    previewName.textContent = val || 'NAMA';
-  });
+  // 3. Live Jersey Preview (foto jersey asli + overlay nama & nomor)
+  const nameCounter = document.getElementById('name-counter');
+  const backImg = document.getElementById('jersey-back-img');
+  const backArt = document.getElementById('jersey-back-art');
+  const NAME_MAX = 16;
 
-  numberInput.addEventListener('input', (e) => {
-    let val = e.target.value;
+  // Pilih warna sablon (putih / gelap) otomatis dari warna jersey di area punggung,
+  // supaya jersey putih tidak membuat teks preview tak terlihat.
+  function applyPrintContrast() {
+    if (!backImg || !backArt || !backImg.naturalWidth) return;
+    try {
+      const size = 32;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const w = backImg.naturalWidth;
+      const h = backImg.naturalHeight;
+      // Area tengah-atas jersey, tempat nama & nomor biasanya dicetak
+      ctx.drawImage(backImg, w * 0.3, h * 0.2, w * 0.4, h * 0.35, 0, 0, size, size);
+      const px = ctx.getImageData(0, 0, size, size).data;
+      let total = 0;
+      let count = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 200) continue; // lewati piksel transparan
+        total += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+        count++;
+      }
+      if (!count) return;
+      backArt.classList.toggle('print-dark', total / count / 255 > 0.62);
+    } catch (err) {
+      // Canvas tidak bisa dibaca (mis. gambar dari domain lain) -> pakai warna putih bawaan
+    }
+  }
+
+  if (backImg) {
+    if (backImg.complete) applyPrintContrast();
+    else backImg.addEventListener('load', applyPrintContrast);
+  }
+
+  function renderNamePreview() {
+    // Spasi tidak dipangkas saat mengetik (agar "DE JONG" bisa ditulis);
+    // hanya hilangkan spasi di awal dan spasi ganda.
+    const caret = nameInput.selectionStart;
+    const cleaned = nameInput.value.replace(/^\s+/, '').replace(/\s{2,}/g, ' ').toUpperCase();
+    if (cleaned !== nameInput.value) {
+      nameInput.value = cleaned;
+      try { nameInput.setSelectionRange(caret, caret); } catch (err) { /* abaikan */ }
+    }
+
+    const shown = cleaned.trim();
+    previewName.textContent = shown || 'NAMA';
+    previewName.classList.toggle('is-placeholder', !shown);
+    // Perkecil huruf otomatis jika nama panjang agar tetap muat di punggung
+    backArt.style.setProperty('--name-fit', Math.min(1, 12 / Math.max(shown.length, 1)).toFixed(3));
+    nameCounter.textContent = `${cleaned.length}/${NAME_MAX}`;
+  }
+
+  function renderNumberPreview() {
+    let val = numberInput.value;
     if (val !== '') {
-      val = Math.max(0, Math.min(99, parseInt(val) || 0));
-      e.target.value = val;
+      val = Math.max(0, Math.min(99, parseInt(val, 10) || 0));
+      numberInput.value = val;
       previewNumber.textContent = val;
+      previewNumber.classList.remove('is-placeholder');
     } else {
       previewNumber.textContent = '00';
+      previewNumber.classList.add('is-placeholder');
     }
+  }
+
+  nameInput.addEventListener('input', renderNamePreview);
+  nameInput.addEventListener('blur', () => {
+    nameInput.value = nameInput.value.trim();
+    renderNamePreview();
+  });
+
+  numberInput.addEventListener('input', renderNumberPreview);
+  // Cegah karakter non-angka yang tetap diterima input type=number
+  numberInput.addEventListener('keydown', (e) => {
+    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
   });
 
   // 4. Quantity Stepper Controls
