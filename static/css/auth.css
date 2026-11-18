@@ -1,9 +1,10 @@
 :root {
-  --color-ink: #171a13;
+  --color-ink: #252a2d;
   --color-muted: #777a72;
   --color-line: #e7e9e3;
-  --color-paper: #f0f1ec;
-  --color-volt: #c8f531;
+  --color-paper: #f1f0ed;
+  --color-accent: #ff6200;
+  --color-accent-hover: #df5200;
   --font-heading: "Barlow Condensed", sans-serif;
   --font-body: "Inter", sans-serif;
 }
@@ -50,8 +51,8 @@ a {
 
 .auth::before {
   background:
-    radial-gradient(ellipse at 18% 28%, rgba(200, 245, 49, 0.18), transparent 38%),
-    radial-gradient(ellipse at 82% 74%, rgba(122, 145, 78, 0.12), transparent 42%);
+    radial-gradient(ellipse at 18% 28%, rgba(255, 98, 0, 0.13), transparent 38%),
+    radial-gradient(ellipse at 82% 74%, rgba(37, 42, 45, 0.08), transparent 42%);
   filter: blur(26px);
   animation: auth-bg-drift 32s ease-in-out infinite alternate;
 }
@@ -103,12 +104,12 @@ a {
 }
 
 .auth__brand strong {
-  color: #829e18;
+  color: var(--color-accent);
 }
 
 .auth__eyebrow {
   margin: 0 0 10px;
-  color: #829e18;
+  color: var(--color-accent);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.2em;
@@ -159,13 +160,13 @@ a {
 }
 
 .auth__field input:hover {
-  border-color: #c8cec0;
+  border-color: #d0d2cf;
 }
 
 .auth__field input:focus {
-  border-color: #9dbd24;
+  border-color: var(--color-accent);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(200, 245, 49, 0.2);
+  box-shadow: 0 0 0 4px rgba(255, 98, 0, 0.14);
 }
 
 .auth__password-control {
@@ -189,12 +190,12 @@ a {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #728518;
+  color: var(--color-accent-hover);
   cursor: pointer;
 }
 
 .auth__password-toggle:hover {
-  background: rgba(200, 245, 49, 0.18);
+  background: rgba(255, 98, 0, 0.12);
 }
 
 .auth__password-icon {
@@ -208,7 +209,7 @@ a {
 }
 
 .auth__password-toggle:focus-visible {
-  outline: 2px solid #86a916;
+  outline: 2px solid var(--color-accent-hover);
   outline-offset: 2px;
 }
 
@@ -230,7 +231,7 @@ a {
   padding: 0 18px;
   border: 0;
   border-radius: 9px;
-  background: var(--color-volt);
+  background: var(--color-accent);
   color: var(--color-ink);
   font: inherit;
   font-size: 11px;
@@ -252,8 +253,8 @@ a {
 
 .auth__submit:hover {
   transform: translateY(-2px);
-  background: #d3ff39;
-  box-shadow: 0 10px 24px rgba(127, 158, 18, 0.22);
+  background: #ff7628;
+  box-shadow: 0 10px 24px rgba(223, 82, 0, 0.2);
 }
 
 .auth__submit:hover::after {
@@ -263,7 +264,7 @@ a {
 .auth__submit:focus-visible,
 .auth__switch a:focus-visible,
 .auth__brand:focus-visible {
-  outline: 3px solid #86a916;
+  outline: 3px solid var(--color-accent-hover);
   outline-offset: 3px;
 }
 
@@ -275,15 +276,18 @@ a {
 }
 
 .auth__switch a {
-  color: var(--color-ink);
-  font-weight: 700;
-  text-decoration-color: #b5d83b;
+  display: inline-block;
+  color: #252a2d;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-decoration-color: var(--color-accent);
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
 
 .auth__switch a:hover {
-  color: #6f8916;
+  color: var(--color-accent-hover);
 }
 
 .auth__footnote {
@@ -295,7 +299,7 @@ a {
 
 .auth__footnote span {
   margin-right: 7px;
-  color: #9fbd2e;
+  color: var(--color-accent);
   font-size: 8px;
   vertical-align: 1px;
 }
