@@ -3,47 +3,197 @@
 {% block title %}Profil Saya | Hendra Sport{% endblock %}
 
 {% block content %}
-<section class="account-section">
-  <div class="container account-narrow">
-    <div class="account-page-heading">
-      <p class="eyebrow">AKUN SAYA</p>
-      <h1>Profil Saya</h1>
-      <p>Pastikan informasi kontak dan alamatmu selalu terbaru.</p>
-    </div>
-    <form class="account-form" method="post" enctype="multipart/form-data">
+<section class="account-section account-section--profile">
+  <div class="container account-profile">
+    <header class="account-page-heading account-page-heading--profile">
+      <div>
+        <p class="eyebrow">AKUN SAYA</p>
+        <h1>Profil Saya</h1>
+        <p>Kelola identitas, kontak, alamat, dan keamanan akun Anda.</p>
+      </div>
+      <a class="account-profile__back" href="{% url 'store:home' %}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Kembali ke beranda
+      </a>
+    </header>
+
+    <form id="profile-edit-form" class="account-form account-form--profile" method="post" enctype="multipart/form-data">
       {% csrf_token %}
-      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-      <div class="profile-avatar-editor">
-        <div class="account-avatar account-avatar--large">
-          {% if profile.avatar %}
-            <img src="{{ profile.avatar.url }}" alt="Foto profil">
-          {% else %}
-            <span>{{ avatar_initial }}</span>
-          {% endif %}
+      {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="account-profile__layout">
+        <div class="account-profile__main">
+          <section class="profile-card">
+            <div class="profile-card__heading">
+              <span class="profile-card__icon"><i data-lucide="user-round" aria-hidden="true"></i></span>
+              <div>
+                <h2>01. Informasi Identitas</h2>
+                <p>Perbarui nama, username, dan informasi profil Anda.</p>
+              </div>
+            </div>
+            <div class="profile-form-grid">
+              {% for field in form %}
+                {% if field.name == 'username' or field.name == 'first_name' or field.name == 'last_name' or field.name == 'gender' or field.name == 'birth_date' %}
+                  <div class="account-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <div class="profile-card__heading">
+              <span class="profile-card__icon"><i data-lucide="contact" aria-hidden="true"></i></span>
+              <div>
+                <h2>02. Informasi Kontak</h2>
+                <p>Pastikan email dan nomor telepon dapat Anda akses.</p>
+              </div>
+            </div>
+            <div class="profile-form-grid">
+              {% for field in form %}
+                {% if field.name == 'email' or field.name == 'phone' %}
+                  <div class="account-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <div class="profile-verification-list">
+              <div class="profile-verification">
+                <div>
+                  <strong>Status verifikasi email</strong>
+                  <span class="{% if profile.email_verified %}is-verified{% else %}is-unverified{% endif %}">
+                    {% if profile.email_verified %}Terverifikasi{% else %}Belum terverifikasi{% endif %}
+                  </span>
+                </div>
+                {% if not profile.email_verified and user.email %}
+                  <button class="button button--outline" type="submit" form="send-email-verification">Kirim tautan</button>
+                {% endif %}
+              </div>
+              <div class="profile-verification">
+                <div>
+                  <strong>Status verifikasi nomor</strong>
+                  <span class="{% if profile.phone_verified %}is-verified{% else %}is-unverified{% endif %}">
+                    {% if profile.phone_verified %}Terverifikasi{% else %}Belum terverifikasi{% endif %}
+                  </span>
+                </div>
+                {% if not profile.phone_verified and profile.phone %}
+                  <button class="button button--outline" type="submit" form="send-phone-verification">Kirim kode SMS</button>
+                {% endif %}
+              </div>
+            </div>
+          </section>
         </div>
-        <div>
-          <strong>Foto profil</strong>
-          <p>Format gambar umum, maksimal 2 MB.</p>
-          {% if profile.avatar %}
-            <label class="account-checkbox"><input type="checkbox" name="{{ form.remove_avatar.name }}" id="{{ form.remove_avatar.id_for_label }}"> Hapus foto</label>
-          {% endif %}
-        </div>
+
+        <aside class="account-profile__sidebar">
+          <section class="profile-photo-card">
+            <div class="profile-photo-card__top">
+              <div class="account-avatar account-avatar--large">
+                {% if profile.avatar %}
+                  <img src="{{ profile.avatar.url }}" alt="Foto profil {{ user.username }}">
+                {% else %}
+                  <span>{{ avatar_initial }}</span>
+                {% endif %}
+              </div>
+              <div>
+                <p class="profile-photo-card__eyebrow">AKUN HENDRA SPORT</p>
+                <h2>Foto profil</h2>
+              </div>
+            </div>
+            <p class="profile-photo-card__hint">Format gambar umum, maksimal 2 MB.</p>
+            <label class="profile-file-label">
+              <i data-lucide="upload" aria-hidden="true"></i>
+              Pilih foto
+              {{ form.avatar }}
+            </label>
+            {% for error in form.avatar.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            {% if profile.avatar %}
+              <label class="profile-remove-avatar">
+                {{ form.remove_avatar }}
+                <span>Hapus foto profil</span>
+              </label>
+            {% endif %}
+          </section>
+
+          <section class="profile-security-card">
+            <span class="profile-security-card__icon"><i data-lucide="shield-check" aria-hidden="true"></i></span>
+            <h2>04. Keamanan Akun</h2>
+            <p>Atur kata sandi, autentikasi dua langkah, dan perangkat yang masuk.</p>
+            <a href="{% url 'accounts:password' %}">Ubah kata sandi <i data-lucide="arrow-right" aria-hidden="true"></i></a>
+            <a href="{% url 'accounts:security' %}">Pengaturan keamanan <i data-lucide="arrow-right" aria-hidden="true"></i></a>
+          </section>
+        </aside>
       </div>
-      {% for field in form %}
-        {% if field.name != 'remove_avatar' %}
-          <div class="account-field">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-      <div class="account-form__actions">
-        <a class="button button--outline" href="{% url 'accounts:dashboard' %}">Kembali</a>
-        <button class="button button--accent" type="submit">Simpan Profil</button>
-      </div>
-      <a class="account-muted-link" href="{% url 'accounts:password' %}">Ubah kata sandi</a>
     </form>
+
+    <section class="profile-card profile-card--addresses">
+        <div class="profile-card__heading">
+          <span class="profile-card__icon"><i data-lucide="map-pin" aria-hidden="true"></i></span>
+          <div>
+            <h2>03. Informasi Alamat</h2>
+            <p>Simpan beberapa alamat dan pilih alamat utama untuk pengiriman.</p>
+          </div>
+          <a class="button button--outline" href="{% url 'accounts:address_add' %}">Tambah alamat</a>
+        </div>
+        {% if addresses %}
+          <div class="profile-address-list">
+            {% for address in addresses %}
+              <article class="profile-address">
+                <div class="profile-address__heading">
+                  <div>
+                    <strong>{{ address.display_label }}</strong>
+                    {% if address.is_primary %}<span class="profile-address__primary">Alamat utama</span>{% endif %}
+                  </div>
+                  <span>{{ address.recipient_name }}</span>
+                </div>
+                <p>{{ address.recipient_phone }}{% if address.city %} · {{ address.city }}{% endif %}{% if address.province %}, {{ address.province }}{% endif %}</p>
+                <p>{{ address.detail_address }}{% if address.subdistrict %}, {{ address.subdistrict }}{% endif %}{% if address.district %}, {{ address.district }}{% endif %}{% if address.postal_code %} {{ address.postal_code }}{% endif %}</p>
+                <div class="profile-address__actions">
+                  <a href="{% url 'accounts:address_edit' address.pk %}">Ubah</a>
+                  {% if not address.is_primary %}
+                    <form method="post" action="{% url 'accounts:address_set_primary' address.pk %}">
+                      {% csrf_token %}<button type="submit">Jadikan utama</button>
+                    </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'accounts:address_delete' address.pk %}" onsubmit="return confirm('Hapus alamat ini?')">
+                    {% csrf_token %}<button type="submit">Hapus</button>
+                  </form>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="account-help">Belum ada alamat tersimpan. Tambahkan alamat agar proses checkout lebih praktis.</p>
+        {% endif %}
+    </section>
+
+    <div class="profile-form-actions">
+      <a class="button button--outline" href="{% url 'accounts:dashboard' %}">Batal</a>
+      <button class="button button--accent" type="submit" form="profile-edit-form">Simpan perubahan <i data-lucide="arrow-right" aria-hidden="true"></i></button>
+    </div>
+
+    {% if not profile.email_verified %}
+      <form id="send-email-verification" method="post" action="{% url 'accounts:send_email_verification' %}" hidden>{% csrf_token %}</form>
+    {% endif %}
+    {% if not profile.phone_verified and profile.phone %}
+      <form id="send-phone-verification" method="post" action="{% url 'accounts:send_phone_verification' %}" hidden>{% csrf_token %}</form>
+    {% endif %}
+    {% if profile.phone_otp_hash %}
+      <form class="profile-code-form" method="post" action="{% url 'accounts:verify_phone' %}">
+        {% csrf_token %}
+        <label for="{{ verification_form.code.id_for_label }}">Masukkan kode SMS untuk memverifikasi nomor</label>
+        {{ verification_form.code }}
+        <button class="button button--accent" type="submit">Verifikasi nomor</button>
+      </form>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

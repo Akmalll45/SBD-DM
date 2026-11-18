@@ -1,90 +1,70 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load humanize %}
 
-{% block title %}Pesanan Berhasil #{{ order.id }} | Hendra Sport{% endblock %}
+{% block title %}Pesanan #{{ order.id }} | Hendra Sport{% endblock %}
 
 {% block content %}
 <section class="success-section">
   <div class="container">
     <div class="success-card">
-      <div class="success-icon-badge">
-        <i data-lucide="check" style="width: 38px; height: 38px; stroke-width: 2.5;"></i>
-      </div>
-
-      <span class="eyebrow" style="color: var(--color-success);">TRANSAKSI SELESAI</span>
-      <h1>Pesanan Berhasil Dibuat!</h1>
-      <p style="color: var(--color-muted); margin-bottom: 20px;">
-        Terima kasih telah mempercayakan apparel dan jersey Anda kepada Hendra Sport. Pesanan Anda segera diproses oleh tim kami.
-      </p>
+      {% if order.payment.status == 'paid' %}
+        <div class="success-icon-badge"><i data-lucide="check" style="width:38px;height:38px;"></i></div>
+        <span class="eyebrow" style="color:var(--color-success);">PEMBAYARAN TERVERIFIKASI</span>
+        <h1>Pembayaran Berhasil!</h1>
+        <p style="color:var(--color-muted);">Pembayaran pesanan #{{ order.id }} sudah diterima dan pesanan sedang dipersiapkan.</p>
+      {% else %}
+        <div class="success-icon-badge"><i data-lucide="package-check" style="width:38px;height:38px;"></i></div>
+        <span class="eyebrow">LANGKAH 5 DARI 5</span>
+        <h1>Pesanan Berhasil Dibuat</h1>
+        <p style="color:var(--color-muted);">Selesaikan pembayaran dan pantau pembaruan status melalui riwayat pesanan.</p>
+      {% endif %}
 
       <div class="order-badge-pill">
-        Nomor Pesanan: <strong>#{{ order.id }}</strong> &bull; Status: <strong>{{ order.get_status_display }}</strong>
+        Pesanan <strong>#{{ order.id }}</strong> · Status pesanan <strong>{{ order.get_status_display }}</strong>
+        {% if order.payment %}· Pembayaran <strong>{{ order.payment.get_status_display }}</strong>{% endif %}
       </div>
 
-      <!-- Shipping & Customer Details -->
-      <div class="receipt-details-grid">
+      <div class="receipt-details-grid" style="text-align:left;margin:24px 0;">
         <div>
-          <span style="font-size:0.75rem; text-transform:uppercase; color:var(--color-muted); font-weight:700;">Penerima</span>
-          <strong style="display:block; font-size:0.95rem; margin-top:2px;">{{ order.full_name }}</strong>
-          <span style="font-size:0.85rem; color:var(--color-dark);">{{ order.phone }}</span>
+          <span style="font-size:.75rem;text-transform:uppercase;color:var(--color-muted);font-weight:700;">Penerima</span>
+          <strong style="display:block;">{{ order.full_name }}</strong>
+          <span>{{ order.phone }}</span>
         </div>
         <div>
-          <span style="font-size:0.75rem; text-transform:uppercase; color:var(--color-muted); font-weight:700;">Tujuan Pengiriman</span>
-          <strong style="display:block; font-size:0.95rem; margin-top:2px;">{{ order.city }}</strong>
-          <span style="font-size:0.82rem; color:var(--color-muted); line-height:1.3; display:block;">{{ order.address }}</span>
+          <span style="font-size:.75rem;text-transform:uppercase;color:var(--color-muted);font-weight:700;">Alamat pengiriman</span>
+          <strong style="display:block;">{{ order.city }}</strong>
+          <span>{{ order.address }}</span>
         </div>
       </div>
 
-      <!-- Purchased Items Receipt -->
-      <div style="border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
-        <h4 style="margin: 0 0 16px 0; text-align: left; font-family: var(--font-heading); font-size: 1.15rem; text-transform: uppercase;">
-          Rincian Item Jersey & Sablon
-        </h4>
-
+      <div style="border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:20px;margin-bottom:24px;text-align:left;">
+        <h4 style="margin:0 0 16px;">Rincian Pesanan</h4>
         {% for item in order.items.all %}
           <div class="receipt-item-line">
             <div>
-              <strong style="display:block; font-size:0.92rem;">{{ item.product_name }}</strong>
-              <span style="font-size:0.8rem; color:var(--color-muted);">Ukuran: {{ item.size }} &bull; Qty: {{ item.quantity }} &times; Rp {{ item.unit_price|floatformat:0 }}</span>
-              {% if item.has_sablon %}
-                <div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:2px;">
-                  Custom Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
-                </div>
-              {% endif %}
+              <strong style="display:block;">{{ item.product_name }}</strong>
+              <span style="font-size:.8rem;color:var(--color-muted);">{% if item.size == 'ALL' %}Produk{% else %}{{ item.size|default:"-" }}{% endif %} · {{ item.quantity }} × Rp {{ item.unit_price|floatformat:0|intcomma }}</span>
+              {% if item.has_sablon %}<div style="font-size:.78rem;color:#0284c7;font-weight:700;">Custom sablon: {{ item.custom_name }} #{{ item.custom_number }}</div>{% endif %}
             </div>
-            <strong style="font-family:var(--font-heading); font-size:1.15rem;">Rp {{ item.line_total|floatformat:0 }}</strong>
+            <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
           </div>
         {% endfor %}
-
-        <div style="display:flex; justify-content:space-between; align-items:baseline; padding-top:16px; margin-top:8px; border-top:1px solid var(--color-border);">
-          <span style="font-family:var(--font-heading); font-size:1.2rem; font-weight:700; text-transform:uppercase;">Total Tagihan:</span>
-          <strong style="font-family:var(--font-heading); font-size:2rem; font-weight:800; color:var(--color-primary);">
-            Rp {{ order.total|floatformat:0 }}
-          </strong>
+        <div class="summary-rows" style="margin-top:16px;">
+          <div class="summary-line"><span>Subtotal produk</span><strong>Rp {{ order.items_subtotal|floatformat:0|intcomma }}</strong></div>
+          <div class="summary-line"><span>{{ order.courier|default:"Pengiriman" }}</span><strong>Rp {{ order.shipping_cost|floatformat:0|intcomma }}</strong></div>
+          <div class="summary-total-line"><span>Total pembayaran</span><strong>Rp {{ order.total|floatformat:0|intcomma }}</strong></div>
         </div>
       </div>
 
-      <!-- Payment Instructions Box -->
-      <div style="padding:18px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:var(--radius-sm); text-align:left; margin-bottom:28px;">
-        <div style="display:flex; align-items:center; gap:8px; color:#0369a1; font-weight:700; font-size:0.9rem; margin-bottom:6px;">
-          <i data-lucide="info" style="width:18px;"></i>
-          Instruksi Pembayaran (Virtual Account Demo):
-        </div>
-        <p style="font-size:0.85rem; color:#075985; margin:0 0 8px 0; line-height:1.4;">
-          Silakan transfer ke nomor Virtual Account: <strong style="font-size:1.05rem; letter-spacing:0.05em; color:#0c4a6e;">88012 0812 3456 7890</strong> (Bank BCA / Mandiri). Pembayaran akan diverifikasi secara otomatis.
-        </p>
-      </div>
-
-      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
-        <a href="{% url 'store:shop' %}" class="button button--accent">
-          Lanjut Belanja Jersey <i data-lucide="arrow-right" style="width: 16px;"></i>
-        </a>
-        <a href="{% url 'store:home' %}" class="button button--outline">
-          Kembali Ke Beranda
-        </a>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        {% if order.payment.status != 'paid' and order.status != 'cancelled' %}
+          <a href="{% url 'store:payment_detail' order.id %}" class="button button--accent">Lanjutkan Pembayaran</a>
+        {% endif %}
+        <a href="{% url 'store:invoice_pdf' order.id %}" class="button button--outline">Unduh Invoice PDF</a>
+        <a href="{% url 'accounts:orders' %}" class="button button--outline">Riwayat Pesanan</a>
+        <a href="{% url 'store:home' %}" class="button button--outline">Kembali ke Beranda</a>
       </div>
     </div>
   </div>
 </section>
 {% endblock %}
-

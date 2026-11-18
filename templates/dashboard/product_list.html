@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_admin.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Kelola Produk & Inventaris{% endblock %}
 {% block page_title %}Manajemen Produk & Stok{% endblock %}
@@ -51,7 +51,7 @@
           <th>Foto</th>
           <th>Nama Produk & Kategori</th>
           <th>Harga Dasar</th>
-          <th>Rincian Stok Ukuran (S / M / L / XL)</th>
+          <th>Rincian Stok / Varian</th>
           <th>Total Stok</th>
           <th>Featured</th>
           <th>Aksi</th>
@@ -79,20 +79,27 @@
             </td>
             <td>
               <strong style="font-family: var(--font-heading); font-size: 1.15rem;">
-                Rp {{ product.base_price|floatformat:0 }}
+                Rp {{ product.base_price|floatformat:0|intcomma }}
               </strong>
             </td>
             <td>
-              <!-- Breakdown S, M, L, XL -->
+              <!-- Stock by product variant -->
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                {% for variant in product.variants.all %}
+                {% if product.is_equipment %}
                   <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; font-size: 0.75rem;">
-                    <strong>{{ variant.size }}:</strong> 
-                    <span style="{% if variant.stock <= 5 %}color:var(--admin-danger); font-weight:800;{% endif %}">{{ variant.stock }}</span>
+                    <strong>Stok:</strong>
+                    <span style="{% if product.stock <= 5 %}color:var(--admin-danger); font-weight:800;{% endif %}">{{ product.stock }}</span>
                   </span>
-                {% empty %}
-                  <span style="font-size: 0.75rem; color: var(--admin-text-muted);">Belum ada varian</span>
-                {% endfor %}
+                {% else %}
+                  {% for variant in product.variants.all %}
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; font-size: 0.75rem;">
+                      <strong>{{ variant.size }}:</strong>
+                      <span style="{% if variant.stock <= 5 %}color:var(--admin-danger); font-weight:800;{% endif %}">{{ variant.stock }}</span>
+                    </span>
+                  {% empty %}
+                    <span style="font-size: 0.75rem; color: var(--admin-text-muted);">Belum ada varian</span>
+                  {% endfor %}
+                {% endif %}
               </div>
             </td>
             <td>

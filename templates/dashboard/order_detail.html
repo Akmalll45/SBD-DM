@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_admin.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Detail Pesanan #{{ order.id }}{% endblock %}
 {% block page_title %}Detail Pesanan #{{ order.id }}{% endblock %}
@@ -31,10 +31,19 @@
       Ubah Status:
     </label>
     {{ form.status }}
+    <label for="{{ form.courier.id_for_label }}" style="font-size:.76rem;font-weight:700;">Kurir</label>
+    {{ form.courier }}
+    <label for="{{ form.tracking_number.id_for_label }}" style="font-size:.76rem;font-weight:700;">Resi</label>
+    {{ form.tracking_number }}
     <button type="submit" class="btn-admin btn-admin--accent btn-admin--sm">
       Update Status
     </button>
   </form>
+  {% if form.errors %}
+    <div role="alert" style="flex-basis:100%;padding:10px 14px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;">
+      {{ form.errors }}
+    </div>
+  {% endif %}
 </div>
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
@@ -52,7 +61,7 @@
         <thead>
           <tr>
             <th>Produk</th>
-            <th>Ukuran</th>
+            <th>Varian</th>
             <th>Instruksi Custom Sablon</th>
             <th>Harga Satuan</th>
             <th>Qty</th>
@@ -74,7 +83,7 @@
               </td>
               <td>
                 <span style="display: inline-block; padding: 4px 10px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 4px; font-weight: 700; font-family: var(--font-heading); font-size: 1.1rem;">
-                  {{ item.size|default:"-" }}
+                  {% if item.size == 'ALL' %}Produk{% else %}{{ item.size|default:"-" }}{% endif %}
                 </span>
               </td>
               <td>
@@ -98,14 +107,14 @@
                 {% endif %}
               </td>
               <td>
-                <span style="font-size: 0.9rem;">Rp {{ item.unit_price|floatformat:0 }}</span>
+                <span style="font-size: 0.9rem;">Rp {{ item.unit_price|floatformat:0|intcomma }}</span>
               </td>
               <td>
                 <strong>{{ item.quantity }}</strong>
               </td>
               <td>
                 <strong style="font-family: var(--font-heading); font-size: 1.15rem;">
-                  Rp {{ item.line_total|floatformat:0 }}
+                  Rp {{ item.line_total|floatformat:0|intcomma }}
                 </strong>
               </td>
             </tr>
@@ -119,18 +128,18 @@
       <div style="width: 300px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--admin-text-muted);">
           <span>Total Produk:</span>
-          <strong>Rp {{ order.total|floatformat:0 }}</strong>
+          <strong>Rp {{ order.items_subtotal|floatformat:0|intcomma }}</strong>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--admin-text-muted);">
           <span>Ongkos Kirim:</span>
-          <span style="color: var(--admin-success); font-weight: 700;">GRATIS</span>
+          <strong>Rp {{ order.shipping_cost|floatformat:0|intcomma }}</strong>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--admin-border); margin-top: 4px;">
           <span style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; text-transform: uppercase;">
             Total Tagihan:
           </span>
           <strong style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; color: var(--admin-accent);">
-            Rp {{ order.total|floatformat:0 }}
+            Rp {{ order.total|floatformat:0|intcomma }}
           </strong>
         </div>
       </div>
@@ -139,6 +148,39 @@
 
   <!-- Right Column: Customer & Shipping Address Info -->
   <div style="display: flex; flex-direction: column; gap: 24px;">
+    <div class="admin-card">
+      <div class="admin-card__header">
+  <h3 class="admin-card__title"><i data-lucide="credit-card" style="width:18px;"></i> Pembayaran</h3>
+      </div>
+      <div style="padding:20px;">
+  <p><strong>Status:</strong> {{ order.payment.get_status_display }}</p>
+  <p><strong>Metode:</strong> {{ order.payment.get_method_display }}</p>
+  <p><strong>Total:</strong> Rp {{ order.payment.amount|floatformat:0|intcomma }}</p>
+  {% if order.payment.gateway_order_id %}<p><strong>Referensi:</strong> {{ order.payment.gateway_order_id }}</p>{% endif %}
+  {% if order.payment.proof %}
+    <a class="btn-admin btn-admin--outline btn-admin--sm" href="{% url 'store:payment_proof_file' order.id %}">Unduh bukti transfer</a>
+  {% endif %}
+  {% for event in order.payment.status_history.all %}
+    <div style="padding:8px 0;border-bottom:1px solid var(--admin-border);">
+      <strong>{{ event.get_status_display }}</strong>
+      {% if event.note %}<div>{{ event.note }}</div>{% endif %}
+      <small style="color:var(--admin-text-muted);">{{ event.created_at|date:"d M Y, H:i" }}</small>
+    </div>
+  {% endfor %}
+  {% if order.payment.status == 'awaiting_verification' %}
+    <form method="post" action="{% url 'dashboard:review_payment' order.payment.id %}" style="margin-top:16px;">
+      {% csrf_token %}
+      <label for="rejection-note-{{ order.payment.id }}">Catatan jika bukti ditolak</label>
+      <textarea id="rejection-note-{{ order.payment.id }}" name="rejection_note" class="form-textarea" rows="2"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn-admin btn-admin--primary btn-admin--sm" name="action" value="approve" type="submit">Verifikasi lunas</button>
+        <button class="btn-admin btn-admin--outline btn-admin--sm" name="action" value="reject" type="submit">Tolak bukti</button>
+      </div>
+    </form>
+  {% endif %}
+      </div>
+    </div>
+
     <!-- Customer Details Card -->
     <div class="admin-card">
       <div class="admin-card__header">
@@ -191,6 +233,11 @@
             Kota / Kabupaten
           </span>
           <strong style="font-size: 0.95rem;">{{ order.city }}</strong>
+        </div>
+        <div style="margin-bottom:10px;">
+          <span style="font-size:.72rem;text-transform:uppercase;font-weight:700;color:var(--admin-text-muted);display:block;">Layanan pengiriman</span>
+          <strong>{{ order.courier|default:"Belum ditentukan" }}</strong>
+          {% if order.tracking_number %}<div>Nomor resi: {{ order.tracking_number }}</div>{% endif %}
         </div>
         <div>
           <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">

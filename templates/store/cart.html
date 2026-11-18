@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Keranjang Belanja | Hendra Sport{% endblock %}
 
@@ -42,14 +42,14 @@
                     {{ item.product.name }}
                   </a>
                   <div class="cart-item-size-badge">
-                    Ukuran: <strong>{{ item.variant.size }}</strong> &bull; Kategori: {{ item.product.category.name }}
+                    {% if item.product.is_equipment %}Produk{% else %}Ukuran: <strong>{{ item.variant.size }}</strong>{% endif %} &bull; Kategori: {{ item.product.category.name }}
                   </div>
 
                   {% if item.has_sablon %}
                     <div class="cart-sablon-tag">
                       <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
                       Custom Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
-                      <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0 }})</span>
+                      <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0|intcomma }})</span>
                     </div>
                   {% endif %}
 
@@ -84,8 +84,8 @@
 
                 <!-- Price & Subtotal -->
                 <div class="cart-item-price-cell">
-                  <span class="cart-item-total">Rp {{ item.line_total|floatformat:0 }}</span>
-                  <span class="cart-item-unit-note">@ Rp {{ item.unit_price|floatformat:0 }}</span>
+                  <span class="cart-item-total">Rp {{ item.line_total|floatformat:0|intcomma }}</span>
+                  <span class="cart-item-unit-note">@ Rp {{ item.unit_price|floatformat:0|intcomma }}</span>
                 </div>
               </div>
             {% endfor %}
@@ -99,7 +99,7 @@
           <div class="summary-rows">
             <div class="summary-line">
               <span>Total Harga Produk</span>
-              <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+              <strong>Rp {{ cart.total|floatformat:0|intcomma }}</strong>
             </div>
             <div class="summary-line">
               <span>Biaya Pengiriman</span>
@@ -112,7 +112,7 @@
 
             <div class="summary-total-line">
               <span>Total Tagihan:</span>
-              <strong>Rp {{ cart.total|floatformat:0 }}</strong>
+              <strong>Rp {{ cart.total|floatformat:0|intcomma }}</strong>
             </div>
           </div>
 

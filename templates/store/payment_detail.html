@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Pembayaran Pesanan #{{ order.id }} | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+  <div class="container" style="max-width: 860px;">
+    <div class="section-heading" style="margin-bottom: 24px;">
+      <div>
+        <span class="eyebrow">LANGKAH 4 DARI 5</span>
+        <h2>Pembayaran</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'accounts:orders' %}">Riwayat pesanan</a>
+    </div>
+
+    <div class="checkout-card" style="margin-bottom: 20px;">
+      <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+        <div>
+          <span class="eyebrow">PESANAN #{{ order.id }}</span>
+          <h3 style="margin:4px 0;">Rp {{ payment.amount|floatformat:0|intcomma }}</h3>
+          <p style="margin:0;color:var(--color-muted);">Metode: {{ payment.get_method_display }}</p>
+        </div>
+        <span class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</span>
+      </div>
+      <p style="margin:14px 0 0;"><strong>Status pembayaran:</strong> {{ payment.get_status_display }}</p>
+    </div>
+
+    {% if payment_history %}
+      <div class="checkout-card" style="margin-bottom:20px;">
+        <h3>Notifikasi &amp; riwayat pembayaran</h3>
+        {% for event in payment_history %}
+          <div style="padding:10px 0;border-bottom:1px solid var(--color-border);">
+            <strong>{{ event.get_status_display }}</strong>
+            {% if event.note %}<p style="margin:4px 0;">{{ event.note }}</p>{% endif %}
+            <small style="color:var(--color-muted);">{{ event.created_at|date:"d M Y, H:i" }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if payment.status == 'paid' %}
+      <div class="checkout-card" style="border-color:#86efac;background:#f0fdf4;margin-bottom:20px;">
+        <h3 style="color:#166534;"><i data-lucide="circle-check" style="width:22px;"></i> Pembayaran Berhasil!</h3>
+        <p style="margin-bottom:0;color:#166534;">Pembayaran telah diverifikasi. Pesanan akan dilanjutkan ke proses pemenuhan.</p>
+      </div>
+    {% elif payment.status == 'awaiting_verification' %}
+      <div class="checkout-card" style="background:#eff6ff;margin-bottom:20px;">
+        <h3>Transfer diterima untuk ditinjau</h3>
+        <p>Bukti transfer sudah dikirim. Admin akan memverifikasi pembayaran sebelum pesanan diproses.</p>
+        {% if payment.proof %}<a class="button button--outline" href="{% url 'store:payment_proof_file' order.id %}">Lihat bukti yang dikirim</a>{% endif %}
+      </div>
+    {% elif payment.status == 'expired' or payment.status == 'cancelled' %}
+      <div class="checkout-card" style="margin-bottom:20px;">
+        <h3>Tagihan tidak aktif</h3>
+        <p>Pesanan ini sudah dibatalkan atau tagihannya kedaluwarsa. Silakan buat pesanan baru dari keranjang.</p>
+      </div>
+    {% elif payment.method == 'midtrans' %}
+      <div class="checkout-card" style="margin-bottom:20px;">
+        <h3>Bayar dengan Midtrans Snap Sandbox</h3>
+        {% if gateway_error %}
+          <p role="alert" style="color:#b91c1c;">{{ gateway_error }}</p>
+          <p>Pastikan MIDTRANS_SERVER_KEY dan MIDTRANS_CLIENT_KEY Sandbox sudah dikonfigurasi, lalu muat ulang halaman ini.</p>
+        {% elif snap_token %}
+          <p>Snap menyediakan metode yang diaktifkan pada akun Sandbox, termasuk Virtual Account dan QRIS.</p>
+          <button type="button" class="button button--accent" id="open-snap">Pilih metode &amp; bayar</button>
+          <script
+            src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key="{{ midtrans_client_key }}"
+          ></script>
+          <script>
+            document.getElementById('open-snap').addEventListener('click', function () {
+              window.snap.pay('{{ snap_token|escapejs }}', {
+                onSuccess: function () { window.location.href = "{% url 'store:order_success' order.id %}"; },
+                onPending: function () { window.location.href = "{% url 'store:order_success' order.id %}"; },
+                onError: function () { window.location.reload(); }
+              });
+            });
+          </script>
+        {% else %}
+          <p>Pembayaran belum dapat dimulai. Muat ulang halaman untuk mencoba kembali.</p>
+        {% endif %}
+        {% if payment.status == 'failed' %}
+          <form method="post" style="margin-top:16px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="retry_midtrans">
+            <button type="submit" class="button button--outline">Buat tagihan Midtrans baru</button>
+          </form>
+        {% endif %}
+      </div>
+    {% elif payment.method == 'manual_transfer' %}
+      <div class="checkout-card" style="margin-bottom:20px;">
+        <h3>Transfer Bank Manual</h3>
+        {% if bank_transfer_name and bank_transfer_account_name and bank_transfer_account_number %}
+          <div class="receipt-details-grid">
+            <div><small>Bank</small><strong style="display:block;">{{ bank_transfer_name }}</strong></div>
+            <div><small>Nama rekening</small><strong style="display:block;">{{ bank_transfer_account_name }}</strong></div>
+            <div><small>Nomor rekening</small><strong style="display:block;">{{ bank_transfer_account_number }}</strong></div>
+            <div><small>Jumlah transfer</small><strong style="display:block;">Rp {{ payment.amount|floatformat:0|intcomma }}</strong></div>
+          </div>
+          {% if payment.rejection_note %}
+            <p role="alert" style="color:#b91c1c;"><strong>Catatan verifikasi:</strong> {{ payment.rejection_note }}</p>
+          {% endif %}
+          {% if payment.status == 'pending' or payment.status == 'failed' %}
+            <form method="post" enctype="multipart/form-data" style="margin-top:20px;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="submit_proof">
+              <div class="form-group">
+                <label for="{{ proof_form.proof.id_for_label }}">Unggah bukti transfer (JPG, PNG, atau PDF; maks. 5 MB)</label>
+                {{ proof_form.proof }}
+                {{ proof_form.proof.errors }}
+              </div>
+              <button type="submit" class="button button--accent">Kirim bukti transfer</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <p>Informasi rekening belum diatur. Hubungi admin toko untuk instruksi transfer.</p>
+        {% endif %}
+      </div>
+    {% elif payment.method == 'legacy' and payment.status == 'pending' %}
+      <div class="checkout-card" style="margin-bottom:20px;">
+        <h3>Pilih metode pembayaran</h3>
+        <p>Pesanan ini dibuat sebelum sistem pembayaran baru tersedia. Pilih metode untuk melanjutkan.</p>
+        <form method="post" style="display:flex;gap:12px;flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="select_method">
+          {% for method, label in payment_methods %}
+            <button class="button {% if forloop.first %}button--accent{% else %}button--outline{% endif %}" name="payment_method" value="{{ method }}" type="submit">{{ label }}</button>
+          {% empty %}
+            <p role="alert">Belum ada metode pembayaran yang dikonfigurasi. Hubungi admin toko.</p>
+          {% endfor %}
+        </form>
+      </div>
+    {% endif %}
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a class="button button--outline" href="{% url 'store:invoice_pdf' order.id %}">Unduh invoice PDF</a>
+      <a class="button button--outline" href="{% url 'accounts:order_detail' order.id %}">Detail &amp; riwayat pesanan</a>
+    </div>
+    <p style="margin-top:18px;font-size:.82rem;color:var(--color-muted);">Status pembayaran diperbarui melalui notifikasi Midtrans yang tervalidasi atau verifikasi admin untuk transfer manual.</p>
+  </div>
+</section>
+{% endblock %}

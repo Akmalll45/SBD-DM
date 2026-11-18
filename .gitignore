@@ -84,3 +84,10 @@ desktop.ini
 /*.jpg
 /*.png
 /*.jpeg
+
+
+# Backup database lokal
+data_backup.json
+
+# Bukti pembayaran pelanggan (lokal)
+private_uploads/payment-proofs/

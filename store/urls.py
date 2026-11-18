@@ -6,8 +6,10 @@ app_name = 'store'
 urlpatterns = [
     # Storefront & Catalog
     path('', views.home, name='home'),
+    path('tentang-kami/', views.about, name='about'),
     path('shop/', views.product_list, name='shop'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
+    path('product/<slug:slug>/rate/', views.rate_product, name='rate_product'),
 
     # Cart Operations
     path('cart/', views.cart_detail, name='cart'),
@@ -17,7 +19,12 @@ urlpatterns = [
 
     # Checkout & Confirmation
     path('checkout/', views.checkout, name='checkout'),
+    path('checkout/konfirmasi/', views.checkout_confirm, name='checkout_confirm'),
+    path('pesanan/<int:order_id>/bayar/', views.payment_detail, name='payment_detail'),
     path('order/<int:order_id>/success/', views.order_success, name='order_success'),
+    path('pesanan/<int:order_id>/invoice.pdf', views.invoice_pdf, name='invoice_pdf'),
+    path('pesanan/<int:order_id>/bukti-transfer/', views.payment_proof_file, name='payment_proof_file'),
+    path('pembayaran/midtrans/notifikasi/', views.midtrans_notification, name='midtrans_notification'),
 
     # Auth
     path('login/', views.login_view, name='login'),

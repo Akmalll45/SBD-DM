@@ -13,6 +13,8 @@ urlpatterns = [
     # 3. Orders & Sablon
     path('orders/', views.order_list, name='order_list'),
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('payments/', views.payment_list, name='payment_list'),
+    path('payments/<int:payment_id>/review/', views.review_payment, name='review_payment'),
 
     # 4. Products & Inventory
     path('products/', views.product_list, name='product_list'),

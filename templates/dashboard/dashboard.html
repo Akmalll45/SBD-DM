@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_admin.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Overview Analytics{% endblock %}
 {% block page_title %}Dashboard Analytics{% endblock %}
@@ -15,7 +15,7 @@
         <i data-lucide="wallet"></i>
       </div>
     </div>
-    <div class="metric-card__value">Rp {{ total_revenue|floatformat:0 }}</div>
+    <div class="metric-card__value">Rp {{ total_revenue|floatformat:0|intcomma }}</div>
     <div class="metric-card__sub">Dari pesanan aktif & terbayar</div>
   </div>
 
@@ -45,7 +45,7 @@
     </div>
     <div class="metric-card__value" style="color: var(--admin-sablon);">{{ total_sablon_orders }}</div>
     <div class="metric-card__sub">
-      Est. Omset Sablon: <strong>Rp {{ sablon_revenue_est|floatformat:0 }}</strong>
+      Est. Omset Sablon: <strong>Rp {{ sablon_revenue_est|floatformat:0|intcomma }}</strong>
     </div>
   </div>
 
@@ -112,7 +112,7 @@
               </td>
               <td>
                 <strong style="font-family: var(--font-heading); font-size: 1.05rem;">
-                  Rp {{ order.total|floatformat:0 }}
+                  Rp {{ order.total|floatformat:0|intcomma }}
                 </strong>
               </td>
               <td>
@@ -155,7 +155,7 @@
         <thead>
           <tr>
             <th>Jersey / Produk</th>
-            <th>Size</th>
+            <th>Varian</th>
             <th>Sisa</th>
             <th>Aksi</th>
           </tr>
@@ -169,7 +169,7 @@
               </td>
               <td>
                 <strong style="padding: 2px 8px; background: var(--admin-bg); border-radius: 4px;">
-                  {{ variant.size }}
+                  {% if variant.product.is_equipment %}Produk{% else %}{{ variant.size }}{% endif %}
                 </strong>
               </td>
               <td>

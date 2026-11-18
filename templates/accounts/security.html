@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Keamanan Akun | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container account-profile">
+    <header class="account-page-heading">
+      <div>
+        <p class="eyebrow">AKUN SAYA</p>
+        <h1>Keamanan Akun</h1>
+        <p>Kelola perlindungan akun dan tinjau aktivitas masuk terbaru.</p>
+      </div>
+      <a class="account-profile__back" href="{% url 'accounts:profile' %}">Kembali ke profil</a>
+    </header>
+
+    <div class="security-page-grid">
+      <section class="profile-card">
+        <div class="profile-card__heading">
+          <span class="profile-card__icon"><i data-lucide="key-round" aria-hidden="true"></i></span>
+          <div>
+            <h2>Autentikasi dua langkah</h2>
+            <p>{% if profile.totp_enabled %}Authenticator aktif{% else %}Tambahkan kode sekali pakai saat masuk{% endif %}</p>
+          </div>
+        </div>
+
+        {% if profile.totp_enabled %}
+          <form method="post" action="{% url 'accounts:totp_disable' %}" class="security-inline-form">
+            {% csrf_token %}
+            <label for="disable-totp-code">Masukkan kode authenticator untuk menonaktifkan</label>
+            <input id="disable-totp-code" class="form-input" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+            <button class="button button--outline" type="submit">Nonaktifkan 2FA</button>
+          </form>
+        {% elif profile.totp_pending_secret %}
+          <div class="totp-setup">
+            <p>Masukkan kunci ini secara manual ke aplikasi authenticator Anda:</p>
+            <code class="totp-secret">{{ profile.totp_pending_secret }}</code>
+            <p class="account-help">Akun: {{ user.email|default:user.username }} · Penerbit: Hendra Sport</p>
+            <p class="account-help">URI setup: <code>{{ totp_uri }}</code></p>
+            <form method="post" action="{% url 'accounts:totp_confirm' %}" class="security-inline-form">
+              {% csrf_token %}
+              <label for="confirm-totp-code">Kode 6 digit dari aplikasi authenticator</label>
+              <input id="confirm-totp-code" class="form-input" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+              <button class="button button--accent" type="submit">Aktifkan 2FA</button>
+            </form>
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'accounts:totp_setup' %}">
+            {% csrf_token %}
+            <button class="button button--accent" type="submit">Siapkan authenticator</button>
+          </form>
+        {% endif %}
+      </section>
+
+      <section class="profile-card">
+        <div class="profile-card__heading">
+          <span class="profile-card__icon"><i data-lucide="monitor-smartphone" aria-hidden="true"></i></span>
+          <div>
+            <h2>Perangkat dan sesi</h2>
+            <p>Keluar dari sesi lain jika Anda tidak mengenali perangkat tertentu.</p>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout_other_devices' %}">
+          {% csrf_token %}
+          <button class="button button--outline" type="submit">Keluar dari perangkat lain</button>
+        </form>
+      </section>
+    </div>
+
+    <section class="profile-card security-activity">
+      <div class="profile-card__heading">
+        <span class="profile-card__icon"><i data-lucide="history" aria-hidden="true"></i></span>
+        <div>
+          <h2>Aktivitas login</h2>
+          <p>Riwayat masuk terakhir ke akun Anda.</p>
+        </div>
+      </div>
+      {% if activities %}
+        <div class="security-activity-list">
+          {% for activity in activities %}
+            <article class="security-activity-row">
+              <div>
+                <strong>{% if activity.session_key_hash == current_session_hash %}Sesi ini{% else %}Sesi login{% endif %}</strong>
+                <span>{{ activity.created_at|date:'d M Y, H:i' }}{% if activity.ip_address %} · {{ activity.ip_address }}{% endif %}</span>
+              </div>
+              <span class="security-activity-row__agent">{{ activity.user_agent|default:'Perangkat tidak diketahui' }}</span>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="account-help">Belum ada aktivitas login yang tercatat.</p>
+      {% endif %}
+    </section>
+
+    <div class="security-password-link">
+      <a href="{% url 'accounts:password' %}">Ubah kata sandi</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

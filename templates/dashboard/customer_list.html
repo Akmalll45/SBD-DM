@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_admin.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Daftar Pelanggan{% endblock %}
 {% block page_title %}Manajemen Pelanggan{% endblock %}
@@ -76,7 +76,7 @@
             </td>
             <td>
               <strong style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--admin-text-main);">
-                Rp {{ customer.total_spent|default:0|floatformat:0 }}
+                Rp {{ customer.total_spent|default:0|floatformat:0|intcomma }}
               </strong>
             </td>
             <td>

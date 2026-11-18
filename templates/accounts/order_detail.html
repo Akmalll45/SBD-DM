@@ -12,6 +12,34 @@
       <span class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</span>
     </div>
 
+    <div class="account-panel" style="margin-bottom:20px;">
+      <h2>Pembayaran</h2>
+      {% if payment %}
+        <p><strong>{{ payment.get_method_display }}</strong> · {{ payment.get_status_display }}</p>
+        {% if payment.status == 'paid' %}
+          <div class="tracking-cancelled" style="background:#f0fdf4;color:#166534;"><i data-lucide="circle-check"></i><div><strong>Pembayaran Berhasil!</strong><p>Pembayaran sudah terverifikasi.</p></div></div>
+        {% elif payment.status == 'pending' and order.status == 'pending' %}
+          <a class="button button--accent" href="{% url 'store:payment_detail' order.id %}">Lanjutkan Pembayaran</a>
+        {% elif payment.status == 'awaiting_verification' %}
+          <p>Bukti transfer diterima dan sedang menunggu verifikasi admin.</p>
+        {% elif payment.rejection_note %}
+          <p role="alert">Catatan verifikasi: {{ payment.rejection_note }}</p>
+          <a class="button button--accent" href="{% url 'store:payment_detail' order.id %}">Kirim ulang bukti</a>
+        {% endif %}
+        <div class="tracking-history">
+          <h3>Riwayat pembayaran</h3>
+          {% for event in payment_history %}
+            <div class="tracking-event"><span></span><div><strong>{{ event.get_status_display }}</strong>{% if event.note %}<p>{{ event.note }}</p>{% endif %}<small>{{ event.created_at|date:"d M Y, H:i" }}</small></div></div>
+          {% empty %}
+            <p>Belum ada pembaruan pembayaran.</p>
+          {% endfor %}
+        </div>
+        <a class="button button--outline" href="{% url 'store:invoice_pdf' order.id %}">Unduh Invoice PDF</a>
+      {% else %}
+        <p>Informasi pembayaran belum tersedia untuk pesanan ini.</p>
+      {% endif %}
+    </div>
+
     <div class="account-panel tracking-panel">
       {% if order.status == 'cancelled' %}
         <div class="tracking-cancelled"><i data-lucide="circle-x"></i><div><strong>Pesanan dibatalkan</strong><p>Pesanan ini tidak lagi diproses.</p></div></div>
@@ -55,7 +83,7 @@
             {% endif %}
             <div class="order-item-row__details">
               <strong>{{ item.product_name }}</strong>
-              <small>Ukuran {{ item.size|default:"-" }} · Qty {{ item.quantity }}</small>
+              <small>{% if item.size == 'ALL' or item.size == 'One Size' or item.size == 'All Size' or item.size == 'OS' or item.size == 'STANDAR' %}Produk{% else %}Ukuran {{ item.size|default:"-" }}{% endif %} · Qty {{ item.quantity }}</small>
               {% if item.has_sablon %}<small>Sablon: {{ item.custom_name }}{% if item.custom_number != None %} #{{ item.custom_number }}{% endif %}</small>{% endif %}
             </div>
             <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
@@ -64,6 +92,7 @@
         <div class="order-price-breakdown">
           <span>Harga item</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong>
           <span>Biaya sablon</span><strong>Rp {{ print_total|floatformat:0|intcomma }}</strong>
+          <span>Ongkos kirim</span><strong>Rp {{ order.shipping_cost|floatformat:0|intcomma }}</strong>
           <span class="order-price-breakdown__total">Total</span><strong class="order-price-breakdown__total">Rp {{ order.total|floatformat:0|intcomma }}</strong>
         </div>
       </div>
@@ -73,7 +102,7 @@
           <strong>{{ order.full_name }}</strong><span>{{ order.phone }}</span>
           <p>{{ order.address }}<br>{{ order.city }}</p>
         </div>
-        {% if order.status == 'pending' %}
+        {% if order.status == 'pending' and order.payment.status != 'paid' %}
           <form method="post" action="{% url 'accounts:cancel_order' order.id %}" onsubmit="return confirm('Yakin ingin membatalkan pesanan ini?');">
             {% csrf_token %}
             <button class="button button--outline button--danger" type="submit">Batalkan Pesanan</button>

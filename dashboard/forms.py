@@ -2,7 +2,8 @@ from decimal import Decimal
 from django import forms
 from django.utils.text import slugify
 
-from store.models import Category, Product, ProductVariant, Order
+from store.forms import OrderStatusForm
+from store.models import Category, Product, ProductVariant
 from .models import SiteSetting, Article
 
 
@@ -67,10 +68,9 @@ class ArticleForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     slug = forms.SlugField(
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'arsenal-home-jersey-2425 (opsional)'})
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'bola-latihan-2025 (opsional)'})
     )
 
-    # Specialized Size Variant Stock fields for convenient management
     stock_s = forms.IntegerField(
         label='Stok Ukuran S',
         min_value=0,
@@ -99,48 +99,97 @@ class ProductForm(forms.ModelForm):
         required=False,
         widget=forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Stok XL'})
     )
+    stock_39 = forms.IntegerField(
+        label='Stok Sepatu 39', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_40 = forms.IntegerField(
+        label='Stok Sepatu 40', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_41 = forms.IntegerField(
+        label='Stok Sepatu 41', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_42 = forms.IntegerField(
+        label='Stok Sepatu 42', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_43 = forms.IntegerField(
+        label='Stok Sepatu 43', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_44 = forms.IntegerField(
+        label='Stok Sepatu 44', min_value=0, initial=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input'}),
+    )
+    stock_all = forms.IntegerField(
+        label='Stok produk',
+        min_value=0,
+        initial=0,
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Jumlah stok'}),
+    )
 
     class Meta:
         model = Product
         fields = [
             'category',
+            'product_type',
             'name',
             'slug',
             'base_price',
             'description',
             'image',
             'back_image',
+            'free_shipping',
             'is_featured',
         ]
         widgets = {
             'category': forms.Select(attrs={'class': 'form-select'}),
-            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Contoh: Arsenal Home Jersey 24/25'}),
+            'product_type': forms.Select(attrs={'class': 'form-select'}),
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Contoh: Bola Latihan atau Sepatu Olahraga'}),
             'base_price': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': '849000'}),
-            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 4, 'placeholder': 'Deskripsi bahan, spesifikasi, dan keunggulan jersey...'}),
+            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 4, 'placeholder': 'Jelaskan deskripsi dan spesifikasi produk...'}),
             'image': forms.FileInput(attrs={'class': 'form-file-input', 'accept': 'image/*'}),
             'back_image': forms.FileInput(attrs={'class': 'form-file-input', 'accept': 'image/*'}),
+            'free_shipping': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
         labels = {
             'category': 'Kategori Produk',
-            'name': 'Nama Produk / Jersey',
+            'product_type': 'Jenis Produk',
+            'name': 'Nama Produk',
             'slug': 'Slug URL (Opsional)',
             'base_price': 'Harga Dasar (Rp)',
             'description': 'Deskripsi Lengkap',
             'image': 'Foto Produk',
             'back_image': 'Foto Punggung Jersey (untuk preview nama & nomor)',
+            'free_shipping': 'Tampilkan label Gratis Ongkir pada produk ini',
             'is_featured': 'Tampilkan di Bagian Featured (Beranda)',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.original_product_type = self.instance.product_type if self.instance.pk else None
         if self.instance and self.instance.pk:
-            # Populate existing variant stock
-            for variant in self.instance.variants.all():
+            variants = list(self.instance.variants.all())
+            for variant in variants:
                 size_lower = variant.size.lower()
                 field_name = f'stock_{size_lower}'
                 if field_name in self.fields:
                     self.initial[field_name] = variant.stock
+            if self.instance.product_type == Product.ProductType.EQUIPMENT:
+                single_size_variant = next(
+                    (
+                        variant for variant in variants
+                        if variant.size.strip().upper() in ('ALL', 'ONE SIZE', 'ALL SIZE', 'OS', 'STANDAR')
+                    ),
+                    None,
+                )
+                self.initial['stock_all'] = (
+                    single_size_variant.stock if single_size_variant else self.instance.stock
+                )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -159,17 +208,29 @@ class ProductForm(forms.ModelForm):
 
     def save(self, commit=True):
         product = super().save(commit=False)
-        # Compute general stock as sum of variants
-        s = self.cleaned_data.get('stock_s') or 0
-        m = self.cleaned_data.get('stock_m') or 0
-        l = self.cleaned_data.get('stock_l') or 0
-        xl = self.cleaned_data.get('stock_xl') or 0
-        product.stock = s + m + l + xl
+        if product.product_type == Product.ProductType.JERSEY:
+            variant_data = {
+                'S': self.cleaned_data.get('stock_s') or 0,
+                'M': self.cleaned_data.get('stock_m') or 0,
+                'L': self.cleaned_data.get('stock_l') or 0,
+                'XL': self.cleaned_data.get('stock_xl') or 0,
+            }
+        elif product.product_type == Product.ProductType.FOOTWEAR:
+            variant_data = {
+                str(size): self.cleaned_data.get(f'stock_{size}') or 0
+                for size in range(39, 45)
+            }
+        else:
+            variant_data = {'ALL': self.cleaned_data.get('stock_all') or 0}
+
+        product.stock = sum(variant_data.values())
 
         if commit:
             product.save()
-            # Update/create variants for sizes S, M, L, XL
-            variant_data = {'S': s, 'M': m, 'L': l, 'XL': xl}
+            if self.original_product_type and self.original_product_type != product.product_type:
+                ProductVariant.objects.filter(product=product).exclude(
+                    size__in=variant_data
+                ).update(stock=0)
             for size, qty in variant_data.items():
                 ProductVariant.objects.update_or_create(
                     product=product,
@@ -187,13 +248,4 @@ class ProductVariantForm(forms.ModelForm):
         widgets = {
             'size': forms.Select(attrs={'class': 'form-select'}),
             'stock': forms.NumberInput(attrs={'class': 'form-input'}),
-        }
-
-
-class OrderStatusForm(forms.ModelForm):
-    class Meta:
-        model = Order
-        fields = ['status']
-        widgets = {
-            'status': forms.Select(attrs={'class': 'form-select'}),
         }

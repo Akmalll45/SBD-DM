@@ -1,4 +1,4 @@
-{% load static %}
+{% load static humanize %}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Minimalist Custom Vanilla CSS -->
-  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.5">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2.8">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -42,15 +42,16 @@
         <div class="nav-menu" id="nav-menu">
           <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'store:home' %}">Home</a>
           <a class="nav-link {% if request.resolver_match.url_name == 'shop' and not request.GET.category %}active{% endif %}" href="{% url 'store:shop' %}">All Jerseys & Gear</a>
-          <div class="dropdown">
-            <button class="nav-dropdown-toggle" type="button" aria-expanded="false">
-              Kategori <i data-lucide="chevron-down" style="width: 15px; height: 15px;"></i>
+          <div class="dropdown about-dropdown">
+            <button class="nav-dropdown-toggle {% if request.resolver_match.url_name == 'about' %}active{% endif %}" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="about-menu">
+              Tentang Kami <i data-lucide="chevron-down" style="width: 15px; height: 15px;" aria-hidden="true"></i>
             </button>
-            <div class="dropdown__menu">
-              <a href="{% url 'store:shop' %}?category=football-jerseys">⚽ Football Jerseys</a>
-              <a href="{% url 'store:shop' %}?category=other-sports-jerseys">🏀 Other Sports Jerseys</a>
-              <a href="{% url 'store:shop' %}?category=sports-equipment">⚡ Sports Equipment</a>
-              <a href="{% url 'store:shop' %}?category=footwear-accessories">👟 Footwear & Accessories</a>
+            <div class="dropdown__menu" id="about-menu">
+              <a href="{% url 'store:about' %}#profil"><i data-lucide="store" aria-hidden="true"></i><span>Profil Hendra Sport</span></a>
+              <a href="{% url 'store:about' %}#visi-misi"><i data-lucide="target" aria-hidden="true"></i><span>Visi &amp; Misi</span></a>
+              <a href="{% url 'store:about' %}#layanan-custom"><i data-lucide="shirt" aria-hidden="true"></i><span>Layanan Custom Jersey</span></a>
+              <a href="{% url 'store:about' %}#mengapa-kami"><i data-lucide="sparkles" aria-hidden="true"></i><span>Mengapa Hendra Sport?</span></a>
+              <a href="{% url 'store:about' %}#hubungi-kami"><i data-lucide="message-circle" aria-hidden="true"></i><span>Hubungi Kami</span></a>
             </div>
           </div>
         </div>
@@ -140,7 +141,7 @@
                 {{ item.product.name }}
               </a>
               <div class="drawer-item__meta">
-                Ukuran: <strong>{{ item.variant.size }}</strong> &bull; Qty: <strong>{{ item.quantity }}</strong>
+                {% if item.product.is_equipment %}Produk{% else %}Ukuran: <strong>{{ item.variant.size }}</strong>{% endif %} &bull; Qty: <strong>{{ item.quantity }}</strong>
               </div>
               {% if item.has_sablon %}
                 <div class="drawer-item__sablon">
@@ -148,7 +149,7 @@
                 </div>
               {% endif %}
               <div class="drawer-item__bottom">
-                <span class="drawer-item__price">Rp {{ item.line_total|floatformat:0 }}</span>
+                <span class="drawer-item__price">Rp {{ item.line_total|floatformat:0|intcomma }}</span>
                 <form action="{% url 'store:remove_cart_item' item.id %}" method="post" style="display:inline;">
                   {% csrf_token %}
                   <button type="submit" class="drawer-item__remove">Hapus</button>
@@ -168,18 +169,15 @@
       {% endif %}
     </div>
 
-    {% if cart and cart.items.all %}
-      <div class="cart-drawer__footer">
-        <div class="cart-drawer__subtotal">
-          <span>Subtotal:</span>
-          <strong id="drawer-subtotal">Rp {{ cart_total|floatformat:0 }}</strong>
-        </div>
-        <div class="cart-drawer__actions">
-          <a href="{% url 'store:cart' %}" class="button button--outline">Lihat Keranjang</a>
-          <a href="{% url 'store:checkout' %}" class="button button--accent">Checkout</a>
-        </div>
+    <div class="cart-drawer__footer" id="cart-drawer-footer" {% if not cart_items_count %}hidden{% endif %}>
+      <div class="cart-drawer__subtotal">
+        <span>Subtotal:</span>
+        <strong id="drawer-subtotal">Rp {{ cart_total|floatformat:0|intcomma }}</strong>
       </div>
-    {% endif %}
+      <div class="cart-drawer__actions">
+        <a href="{% url 'store:checkout' %}" class="button button--accent">Checkout</a>
+      </div>
+    </div>
   </aside>
 
   <!-- Flash / Toast Messages -->
@@ -220,25 +218,37 @@
         <div class="footer-column">
           <h4>Layanan</h4>
           <ul>
-            <li><a href="{% url 'store:shop' %}">Panduan Ukuran (S, M, L, XL)</a></li>
-            <li><a href="{% url 'store:shop' %}">Layanan Sablon Custom</a></li>
+            {% if product and not product.is_jersey %}
+              <li><a href="{% url 'store:shop' %}">Informasi Produk &amp; Harga</a></li>
+              <li><a href="{% url 'store:shop' %}">Katalog Perlengkapan Olahraga</a></li>
+            {% else %}
+              <li><a href="{% url 'store:shop' %}">Panduan Ukuran (S, M, L, XL)</a></li>
+              <li><a href="{% url 'store:shop' %}">Layanan Sablon Custom</a></li>
+            {% endif %}
             <li><a href="{% url 'store:cart' %}">Status Keranjang</a></li>
             <li><a href="{% url 'store:login' %}">Akun Member</a></li>
           </ul>
         </div>
         <div class="footer-column">
           <h4>Keunggulan</h4>
-          <ul>
-            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Bahan Breathable HEAT.RDY</li>
-            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Sablon Polyflex High-Grade</li>
-            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Jahitan Presisi & Kuat</li>
-            <li><i data-lucide="check" style="width: 14px; display: inline;"></i> Garansi Kepuasan Pelanggan</li>
+          <ul class="footer-benefit-list">
+            {% if product and not product.is_jersey %}
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Pilihan produk olahraga beragam</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Informasi produk dan harga jelas</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Proses pemesanan praktis</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Pelayanan pelanggan responsif</span></li>
+            {% else %}
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Bahan Breathable HEAT.RDY</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Sablon Polyflex High-Grade</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Jahitan Presisi &amp; Kuat</span></li>
+              <li><i class="footer-benefit__icon" data-lucide="check" aria-hidden="true"></i><span>Garansi Kepuasan Pelanggan</span></li>
+            {% endif %}
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <div>&copy; 2026 Hendra Sport Indonesia. Seluruh hak cipta dilindungi.</div>
-        <div>Minimalist Sports Apparel & Custom Football Jersey</div>
+        <div>{% if product and not product.is_jersey %}Perlengkapan &amp; Kebutuhan Olahraga{% else %}Minimalist Sports Apparel &amp; Custom Football Jersey{% endif %}</div>
       </div>
     </div>
   </footer>

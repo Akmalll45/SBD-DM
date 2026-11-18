@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
+from .models import Order, Payment
+
 
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -44,3 +46,114 @@ class LoginForm(AuthenticationForm):
             'autofocus': True,
         })
         self.fields['password'].widget.attrs.update({'autocomplete': 'current-password'})
+
+
+class CheckoutShippingForm(forms.Form):
+    full_name = forms.CharField(
+        max_length=120,
+        label='Nama penerima',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'name'}),
+    )
+    phone = forms.CharField(
+        max_length=30,
+        label='Nomor telepon',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'tel'}),
+    )
+    city = forms.CharField(
+        max_length=80,
+        label='Kota / kabupaten',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'address-level2'}),
+    )
+    address = forms.CharField(
+        label='Alamat lengkap',
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'class': 'form-textarea',
+            'autocomplete': 'street-address',
+        }),
+    )
+    courier = forms.ChoiceField(
+        label='Layanan pengiriman',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        shipping_options = kwargs.pop('shipping_options')
+        super().__init__(*args, **kwargs)
+        self.fields['courier'].choices = [
+            (code, f'{label} — Rp {amount:,.0f}'.replace(',', '.'))
+            for code, label, amount in shipping_options
+        ]
+
+
+class PaymentProofForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['proof']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proof'].widget.attrs.update({
+            'accept': '.jpg,.jpeg,.png,.pdf',
+            'class': 'form-input',
+        })
+        self.fields['proof'].required = True
+
+
+class OrderStatusForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['status', 'courier', 'tracking_number']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'courier': forms.TextInput(attrs={'class': 'form-input'}),
+            'tracking_number': forms.TextInput(attrs={'class': 'form-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = [
+            choice for choice in Order.Status.choices
+            if choice[0] != Order.Status.PAID
+        ]
+        if self.instance.status == Order.Status.PAID:
+            choices.append((Order.Status.PAID, Order.Status.PAID.label))
+        self.fields['status'].choices = choices
+
+    def clean_status(self):
+        status = self.cleaned_data['status']
+        payment = getattr(self.instance, 'payment', None)
+        if self.instance.status == Order.Status.CANCELLED and status != Order.Status.CANCELLED:
+            raise forms.ValidationError('Pesanan yang sudah dibatalkan tidak dapat diaktifkan kembali.')
+        blocks_cancellation = payment and (
+            payment.status in (
+                Payment.Status.PAID,
+                Payment.Status.AWAITING_VERIFICATION,
+            )
+            or (
+                payment.method == Payment.Method.MIDTRANS
+                and payment.status == Payment.Status.PENDING
+                and bool(payment.snap_token)
+            )
+        )
+        if status == Order.Status.CANCELLED and blocks_cancellation:
+            raise forms.ValidationError(
+                'Pesanan tidak dapat dibatalkan saat pembayaran sudah lunas, '
+                'menunggu verifikasi, atau memiliki tagihan Midtrans aktif.'
+            )
+        if (
+            status == Order.Status.PENDING
+            and payment
+            and payment.status == Payment.Status.PAID
+        ):
+            raise forms.ValidationError('Pesanan lunas tidak dapat dikembalikan ke status menunggu pembayaran.')
+        if status in (
+            Order.Status.PROCESSING,
+            Order.Status.SHIPPED,
+            Order.Status.COMPLETED,
+        ):
+            if not payment or payment.status != Payment.Status.PAID:
+                raise forms.ValidationError(
+                    'Pesanan hanya dapat diproses setelah pembayaran berstatus lunas.'
+                )
+        return status

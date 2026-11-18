@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tentang Kami | Hendra Sport{% endblock %}
+
+{% block content %}
+<div class="about-page">
+<section class="about-hero" aria-labelledby="about-title">
+  <div class="container about-hero__grid">
+    <div class="about-hero__content">
+      <span class="eyebrow">APPAREL &amp; PERLENGKAPAN OLAHRAGA</span>
+      <h1 id="about-title">Temukan perlengkapan untuk setiap permainan</h1>
+      <p>
+        Hendra Sport menghadirkan pilihan jersey, apparel, dan perlengkapan olahraga,
+        dengan opsi custom untuk membuat jersey terasa lebih personal
+      </p>
+      <div class="about-hero__actions">
+        <a class="button button--accent" href="{% url 'store:shop' %}">
+          Jelajahi Produk <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+        </a>
+        <a class="about-hero__text-link" href="#layanan-custom">
+          Kenali layanan custom <i data-lucide="arrow-down" aria-hidden="true"></i>
+        </a>
+      </div>
+      <div class="about-hero__focus" aria-label="Fokus Hendra Sport">
+        <span>Jersey</span>
+        <span>Apparel</span>
+        <span>Perlengkapan</span>
+        <span>Custom</span>
+      </div>
+    </div>
+    <div class="about-hero__visual">
+      <img src="{% static 'images/Banner_promo.jpg' %}" alt="Pemain mengenakan jersey di stadion">
+      <div class="about-hero__visual-caption">
+        <span>HENDRA SPORT</span>
+        <strong>GEAR UP PUSH YOUR LIMITS</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about-section" id="profil" aria-labelledby="about-profile-title">
+  <div class="container about-profile">
+    <div class="about-section__heading">
+      <span class="eyebrow">01 / PROFIL</span>
+      <h2 id="about-profile-title">Tentang Hendra Sport</h2>
+    </div>
+    <div class="about-profile__content" data-reveal>
+      <p class="about-profile__lead">
+        Satu tempat untuk kebutuhan olahraga dan gaya bermain Anda.
+      </p>
+      <p>
+        Hendra Sport adalah toko perlengkapan dan kebutuhan olahraga yang berfokus
+        pada jersey, apparel, perlengkapan olahraga, serta layanan custom jersey.
+        Kami membantu pelanggan memilih produk dan personalisasi yang sesuai dengan
+        kebutuhan mereka.
+      </p>
+      <div class="about-profile__tags" aria-label="Fokus produk dan layanan">
+        <span><i data-lucide="shirt" aria-hidden="true"></i> Jersey &amp; apparel</span>
+        <span><i data-lucide="dumbbell" aria-hidden="true"></i> Perlengkapan olahraga</span>
+        <span><i data-lucide="sparkles" aria-hidden="true"></i> Personalisasi custom</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about-section about-section--muted" id="visi-misi" aria-labelledby="about-vision-title">
+  <div class="container about-vision">
+    <article class="about-vision__statement" data-reveal>
+      <span class="eyebrow">02 / ARAH KAMI</span>
+      <div class="about-section__icon"><i data-lucide="compass" aria-hidden="true"></i></div>
+      <h2 id="about-vision-title">Visi</h2>
+      <p>Menjadi pilihan terpercaya dalam memenuhi kebutuhan apparel dan perlengkapan olahraga.</p>
+    </article>
+    <article class="about-mission" data-reveal>
+      <span class="eyebrow">LANGKAH KAMI</span>
+      <h2>Misi</h2>
+      <ul>
+        <li><i data-lucide="check" aria-hidden="true"></i><span>Menyediakan produk olahraga yang berkualitas.</span></li>
+        <li><i data-lucide="check" aria-hidden="true"></i><span>Memberikan pilihan produk yang beragam.</span></li>
+        <li><i data-lucide="check" aria-hidden="true"></i><span>Menghadirkan layanan custom sesuai kebutuhan pelanggan.</span></li>
+        <li><i data-lucide="check" aria-hidden="true"></i><span>Memberikan pengalaman belanja yang mudah dan nyaman.</span></li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="about-section" id="layanan-custom" aria-labelledby="about-custom-title">
+  <div class="container">
+    <div class="about-section__heading about-section__heading--center">
+      <span class="eyebrow">03 / PERSONALISASI</span>
+      <h2 id="about-custom-title">Layanan Custom Jersey</h2>
+      <p>Tambahkan sentuhan personal pada jersey pilihan Anda.</p>
+    </div>
+
+    <div class="about-custom">
+      <div class="about-custom__visual" data-reveal>
+        <img src="{% static 'images/categories/football-jerseys.svg' %}" alt="Ilustrasi jersey custom Hendra Sport" loading="lazy">
+        <div class="about-custom__visual-label">
+          <i data-lucide="sparkles" aria-hidden="true"></i>
+          <span>PERSONALISASI SESUAI KEBUTUHAN</span>
+        </div>
+      </div>
+      <div class="about-custom__copy" data-reveal>
+        <span class="about-custom__kicker">NAMA. NOMOR. GAYA ANDA.</span>
+        <h3>Jersey yang terasa lebih personal.</h3>
+        <p>
+          Pada produk yang menyediakan opsi custom, tambahkan nama dan nomor punggung
+          saat memilih jersey. Untuk permintaan desain di luar opsi produk, siapkan
+          detail atau referensi desain dan konfirmasikan terlebih dahulu melalui
+          kanal kontak yang tersedia.
+        </p>
+        <a class="about-inline-link" href="#hubungi-kami">
+          Lihat kanal kontak <i data-lucide="arrow-right" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="about-process" aria-label="Tahapan pemesanan custom jersey">
+      <article class="about-process__step" data-reveal>
+        <span>01</span>
+        <h3>Pilih produk</h3>
+        <p>Pilih jersey dan ukuran yang tersedia di katalog.</p>
+      </article>
+      <article class="about-process__step" data-reveal>
+        <span>02</span>
+        <h3>Tentukan detail</h3>
+        <p>Isi nama dan nomor custom pada produk yang menyediakan opsi tersebut.</p>
+      </article>
+      <article class="about-process__step" data-reveal>
+        <span>03</span>
+        <h3>Konfirmasi pesanan</h3>
+        <p>Lengkapi informasi pengiriman dan selesaikan pembayaran.</p>
+      </article>
+      <article class="about-process__step" data-reveal>
+        <span>04</span>
+        <h3>Diproses &amp; dikirim</h3>
+        <p>Pesanan diproses setelah pembayaran terverifikasi, lalu dikirim ke alamat tujuan.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="about-section about-section--muted" id="mengapa-kami" aria-labelledby="about-why-title">
+  <div class="container">
+    <div class="about-section__heading">
+      <span class="eyebrow">04 / ALASAN MEMILIH KAMI</span>
+      <h2 id="about-why-title">Olahraga, lebih praktis dari awal.</h2>
+    </div>
+    <div class="about-benefits">
+      <article class="about-benefit" data-reveal>
+        <i data-lucide="layers-3" aria-hidden="true"></i>
+        <h3>Pilihan beragam</h3>
+        <p>Temukan jersey, apparel, dan perlengkapan olahraga dalam satu katalog.</p>
+      </article>
+      <article class="about-benefit" data-reveal>
+        <i data-lucide="shirt" aria-hidden="true"></i>
+        <h3>Custom jersey</h3>
+        <p>Personalisasikan nama dan nomor pada produk yang menyediakan opsi custom.</p>
+      </article>
+      <article class="about-benefit" data-reveal>
+        <i data-lucide="badge-info" aria-hidden="true"></i>
+        <h3>Informasi jelas</h3>
+        <p>Lihat informasi produk dan harga sebelum memutuskan untuk membeli.</p>
+      </article>
+      <article class="about-benefit" data-reveal>
+        <i data-lucide="mouse-pointer-click" aria-hidden="true"></i>
+        <h3>Pemesanan praktis</h3>
+        <p>Pilih produk, atur detail pesanan, dan selesaikan checkout secara online.</p>
+      </article>
+      <article class="about-benefit" data-reveal>
+        <i data-lucide="messages-square" aria-hidden="true"></i>
+        <h3>Dukungan pelanggan</h3>
+        <p>Hubungi kami melalui kanal yang tersedia untuk bantuan terkait pesanan.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="about-section about-contact" id="hubungi-kami" aria-labelledby="about-contact-title">
+  <div class="container">
+    <div class="about-contact__heading" data-reveal>
+      <div>
+        <span class="eyebrow">05 / HUBUNGI KAMI</span>
+        <h2 id="about-contact-title">Ada yang ingin ditanyakan?</h2>
+        <p>Gunakan informasi kontak yang tersedia untuk bertanya tentang produk atau layanan custom.</p>
+      </div>
+      <a class="button button--accent" href="{% url 'store:shop' %}">
+        Lihat Katalog <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+      </a>
+    </div>
+
+    <div class="about-contact__grid">
+      {% if whatsapp_url %}
+        <a class="about-contact-card" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer" data-reveal>
+          <span class="about-contact-card__icon"><i data-lucide="message-circle" aria-hidden="true"></i></span>
+          <span class="about-contact-card__label">WhatsApp</span>
+          <strong>{{ contact_phone }}</strong>
+          <span class="about-contact-card__action">Mulai percakapan <i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+        </a>
+      {% else %}
+        <div class="about-contact-card about-contact-card--unavailable" data-reveal>
+          <span class="about-contact-card__icon"><i data-lucide="message-circle" aria-hidden="true"></i></span>
+          <span class="about-contact-card__label">WhatsApp</span>
+          <strong>Belum dicantumkan</strong>
+          <span class="about-contact-card__action">Informasi kontak belum tersedia</span>
+        </div>
+      {% endif %}
+
+      {% if contact_email %}
+        <a class="about-contact-card" href="mailto:{{ contact_email }}" data-reveal>
+          <span class="about-contact-card__icon"><i data-lucide="mail" aria-hidden="true"></i></span>
+          <span class="about-contact-card__label">Email</span>
+          <strong>{{ contact_email }}</strong>
+          <span class="about-contact-card__action">Kirim email <i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+        </a>
+      {% else %}
+        <div class="about-contact-card about-contact-card--unavailable" data-reveal>
+          <span class="about-contact-card__icon"><i data-lucide="mail" aria-hidden="true"></i></span>
+          <span class="about-contact-card__label">Email</span>
+          <strong>Belum dicantumkan</strong>
+          <span class="about-contact-card__action">Informasi kontak belum tersedia</span>
+        </div>
+      {% endif %}
+
+      <a class="about-contact-card" href="https://www.instagram.com/hendrasport_andalas/" target="_blank" rel="noopener noreferrer" data-reveal>
+        <span class="about-contact-card__icon"><i data-lucide="at-sign" aria-hidden="true"></i></span>
+        <span class="about-contact-card__label">Instagram</span>
+        <strong>@hendrasport_andalas</strong>
+        <span class="about-contact-card__action">Kunjungi Instagram <i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+      </a>
+    </div>
+  </div>
+</section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/about.js' %}?v=1.1" defer></script>
+{% endblock %}

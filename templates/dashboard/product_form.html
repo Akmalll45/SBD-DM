@@ -33,6 +33,12 @@
         {% if form.category.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.category.errors.0 }}</span>{% endif %}
       </div>
 
+      <div class="admin-field">
+        <label for="{{ form.product_type.id_for_label }}">{{ form.product_type.label }} *</label>
+        {{ form.product_type }}
+        {% if form.product_type.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.product_type.errors.0 }}</span>{% endif %}
+      </div>
+
       <!-- Base Price -->
       <div class="admin-field">
         <label for="{{ form.base_price.id_for_label }}">{{ form.base_price.label }} *</label>
@@ -73,7 +79,7 @@
       </div>
 
       <!-- Back Image Upload & Preview -->
-      <div class="admin-field form-group-full">
+      <div class="admin-field form-group-full" data-product-type-panel="jersey" {% if form.product_type.value != 'jersey' %}hidden{% endif %}>
         <label for="{{ form.back_image.id_for_label }}">{{ form.back_image.label }}</label>
         {% if not is_create and product.back_image %}
           <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
@@ -97,8 +103,7 @@
         {% if form.description.errors %}<span style="color:var(--admin-danger); font-size:0.8rem;">{{ form.description.errors.0 }}</span>{% endif %}
       </div>
 
-      <!-- SIZE VARIANTS INVENTORY SECTION -->
-      <div class="form-group-full" style="padding: 20px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 6px;">
+      <div class="form-group-full" data-product-type-panel="jersey" {% if form.product_type.value != 'jersey' %}hidden{% endif %} style="padding: 20px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 6px;">
         <h4 style="margin: 0 0 8px 0; font-family: var(--font-heading); font-size: 1.15rem; text-transform: uppercase;">
           <i data-lucide="layers" style="width: 16px; vertical-align: middle;"></i>
           Alokasi Stok Ukuran Jersey (S, M, L, XL)
@@ -127,6 +132,51 @@
         </div>
       </div>
 
+      <div class="form-group-full" data-product-type-panel="footwear" {% if form.product_type.value != 'footwear' %}hidden{% endif %} style="padding: 20px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 6px;">
+        <h4 style="margin: 0 0 8px 0; font-family: var(--font-heading); font-size: 1.15rem; text-transform: uppercase;">
+          <i data-lucide="layers" style="width: 16px; vertical-align: middle;"></i>
+          Stok Ukuran Sepatu
+        </h4>
+        <p style="margin: 0 0 16px 0; font-size: 0.8rem; color: var(--admin-text-muted);">
+          Atur stok berdasarkan ukuran sepatu yang tersedia.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+          {% for field in form %}
+            {% if field.name == 'stock_39' or field.name == 'stock_40' or field.name == 'stock_41' or field.name == 'stock_42' or field.name == 'stock_43' or field.name == 'stock_44' %}
+              <div class="admin-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group-full" data-product-type-panel="equipment" {% if form.product_type.value != 'equipment' %}hidden{% endif %} style="padding: 20px; background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 6px;">
+        <h4 style="margin: 0 0 8px 0; font-family: var(--font-heading); font-size: 1.15rem; text-transform: uppercase;">
+          <i data-lucide="package" style="width: 16px; vertical-align: middle;"></i>
+          Stok Produk
+        </h4>
+        <p style="margin: 0 0 16px 0; font-size: 0.8rem; color: var(--admin-text-muted);">
+          Produk ini dijual tanpa pilihan ukuran; atur jumlah stok totalnya.
+        </p>
+        <div class="admin-field" style="max-width: 240px;">
+          <label for="{{ form.stock_all.id_for_label }}">{{ form.stock_all.label }}</label>
+          {{ form.stock_all }}
+        </div>
+      </div>
+
+      <!-- Product Badges -->
+      <div class="form-group-full">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+          {{ form.free_shipping }}
+          <span style="font-weight: 700; font-size: 0.9rem;">{{ form.free_shipping.label }}</span>
+        </label>
+        <span style="font-size: 0.75rem; color: var(--admin-text-muted); display: block; margin-left: 28px;">
+          Jika dicentang, badge Gratis Ongkir akan tampil di kartu produk pada halaman toko.
+        </span>
+      </div>
+
       <!-- Featured Toggle -->
       <div class="form-group-full">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
@@ -150,5 +200,26 @@
     </div>
   </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const productType = document.getElementById('id_product_type');
+  if (!productType) return;
+
+  const panels = document.querySelectorAll('[data-product-type-panel]');
+  const updatePanels = () => {
+    panels.forEach((panel) => {
+      const active = panel.dataset.productTypePanel === productType.value;
+      panel.hidden = !active;
+      panel.querySelectorAll('input, select, textarea, button').forEach((control) => {
+        control.disabled = !active;
+      });
+    });
+  };
+
+  productType.addEventListener('change', updatePanels);
+  updatePanels();
+});
+</script>
 {% endblock %}
 

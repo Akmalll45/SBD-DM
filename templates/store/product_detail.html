@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}{{ product.name }} | Hendra Sport{% endblock %}
 
@@ -26,7 +26,7 @@
             {% if product.is_featured %}
               <span class="badge-tag badge-tag--accent">Featured</span>
             {% endif %}
-            {% if 'jersey' in product.category.name|lower %}
+            {% if product.is_jersey %}
               <span class="badge-tag badge-tag--sablon">Custom Sablon Ready</span>
             {% endif %}
           </div>
@@ -35,15 +35,16 @@
             <img id="main-product-img" src="{{ product.image.url }}" alt="{{ product.name }}">
           {% else %}
             <div style="display:flex; flex-direction:column; align-items:center; gap:12px; color: var(--color-muted);">
-              <i data-lucide="shirt" style="width: 110px; height: 110px; stroke-width: 1.1;"></i>
+              <i data-lucide="{% if product.is_jersey %}shirt{% else %}package{% endif %}" style="width: 110px; height: 110px; stroke-width: 1.1;"></i>
               <span style="font-family: var(--font-heading); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.08em;">
-                Authentic Matchday Issue
+                {% if product.is_jersey %}Jersey{% elif product.is_footwear %}Footwear{% else %}Perlengkapan Olahraga{% endif %}
               </span>
             </div>
           {% endif %}
         </div>
 
         <!-- Pro Features Strip -->
+        {% if product.is_jersey %}
         <div class="product-features-strip">
           <div class="feature-pill">
             <i data-lucide="wind"></i>
@@ -67,6 +68,7 @@
             </div>
           </div>
         </div>
+        {% endif %}
       </div>
 
       <!-- Right Column: Specs, Custom Sablon Toggle, Form -->
@@ -74,22 +76,42 @@
         <div class="product-title-area">
           <span class="eyebrow">{{ product.category.name }}</span>
           <h1>{{ product.name }}</h1>
+
+          <!-- Rating Strip -->
+          <div class="detail-rating-strip">
+            {% if product.total_ratings > 0 %}
+              <div class="detail-stars">
+                {% for i in "12345" %}
+                  {% if product.avg_rating >= forloop.counter %}★{% elif product.avg_rating >= forloop.counter|add:"-0.5" %}★{% else %}☆{% endif %}
+                {% endfor %}
+              </div>
+              <strong class="detail-score">{{ product.avg_rating|floatformat:1 }}</strong>
+              <a href="#reviews-section" class="detail-count">{{ product.total_ratings }} ulasan</a>
+              <button type="button" class="detail-rate-anchor" data-open-rating-modal>{% if user_rating %}Edit penilaian{% else %}Beri penilaian{% endif %}</button>
+            {% else %}
+              <div class="detail-stars detail-stars--empty">☆☆☆☆☆</div>
+              <span class="detail-none">Belum ada penilaian</span>
+              <button type="button" class="detail-rate-anchor" data-open-rating-modal>{% if user_rating %}Edit penilaian{% else %}Jadilah yang pertama{% endif %}</button>
+            {% endif %}
+          </div>
         </div>
 
         <!-- Dynamic Price Card -->
         <div class="price-card">
           <div class="price-card__main">
             <span class="price-card__amount" id="total-unit-price-display">
-              Rp {{ product.base_price|floatformat:0 }}
+              Rp {{ product.base_price|floatformat:0|intcomma }}
             </span>
             <span class="price-card__note">/ pcs</span>
           </div>
 
           <div class="price-breakdown">
-            <span>Harga Jersey: <strong>Rp {{ product.base_price|floatformat:0 }}</strong></span>
+            <span>{% if product.is_jersey %}Harga Jersey{% else %}Harga Produk{% endif %}: <strong>Rp {{ product.base_price|floatformat:0|intcomma }}</strong></span>
+            {% if product.is_jersey %}
             <span id="sablon-fee-note" style="display: none;" class="active">
-              + Sablon Polyflex (Rp {{ sablon_fee|floatformat:0 }})
+              + Sablon Polyflex (Rp {{ sablon_fee|floatformat:0|intcomma }})
             </span>
+            {% endif %}
           </div>
         </div>
 
@@ -106,12 +128,12 @@
           data-sablon-fee="{{ sablon_fee|default:75000 }}"
         >
           {% csrf_token %}
-          <input type="hidden" name="variant_id" id="selected-variant-id" required>
+          <input type="hidden" name="variant_id" id="selected-variant-id" value="{% if default_variant %}{{ default_variant.id }}{% endif %}" {% if not product.is_equipment %}required{% endif %}>
 
-          <!-- 1. Size Selection Pills (S, M, L, XL) -->
+          {% if not product.is_equipment %}
           <div class="option-block">
             <div class="option-header">
-              <strong>Pilih Ukuran Jersey:</strong>
+              <strong>{{ product.size_section_title|title }}</strong>
               <span id="size-status" style="color: var(--color-accent); font-weight: 600;">Silakan pilih ukuran</span>
             </div>
 
@@ -132,11 +154,12 @@
               {% endfor %}
             </div>
             <div id="size-error" style="display:none; color:var(--color-danger); font-size:0.8rem; font-weight:600;">
-              * Harap tentukan ukuran terlebih dahulu sebelum menambahkan ke keranjang.
+              * Harap pilih ukuran terlebih dahulu sebelum menambahkan ke keranjang.
             </div>
           </div>
+          {% endif %}
 
-          <!-- 2. "Custom Sablon" Toggle Feature -->
+          {% if product.is_jersey %}
           <div class="sablon-card" id="sablon-card" style="margin-top: 24px;">
             <div class="sablon-card__header" id="sablon-header-toggle">
               <div class="sablon-card__info">
@@ -145,7 +168,7 @@
                 </div>
                 <div>
                   <h4>Custom Sablon Nama & Nomor</h4>
-                  <p>Cetak nama & nomor punggung resmi (+Rp {{ sablon_fee|floatformat:0 }})</p>
+                  <p>Cetak nama & nomor punggung resmi (+Rp {{ sablon_fee|floatformat:0|intcomma }})</p>
                 </div>
               </div>
 
@@ -231,6 +254,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
 
           <!-- 3. Quantity Stepper & Action Buttons -->
           <div style="margin-top: 24px;">
@@ -257,6 +281,101 @@
       </div>
     </div>
 
+    <!-- Customer Reviews -->
+    <section class="reviews-section" id="reviews-section">
+      <div class="reviews-section__header">
+        <div>
+          <span class="eyebrow" style="color:var(--color-accent);">ULASAN PELANGGAN</span>
+          <h2>Ulasan Produk</h2>
+        </div>
+      </div>
+
+      <div class="reviews-feed">
+        <h3 class="reviews-feed__title">Ulasan pelanggan ({{ reviews|length }})</h3>
+        {% if reviews %}
+          <div class="reviews-list">
+            {% for rev in reviews %}
+              <div class="review-item">
+                <div class="review-item__header">
+                  <div class="review-avatar">{{ rev.user.username|make_list|first|upper }}</div>
+                  <div class="review-meta">
+                    <strong>{{ rev.user.username }}</strong>
+                    <span class="review-date">{{ rev.created_at|date:"d M Y" }}</span>
+                  </div>
+                  <div class="review-stars">
+                    {% for i in "12345" %}
+                      {% if rev.rating >= forloop.counter %}★{% else %}☆{% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+                {% if rev.review %}
+                  <p class="review-text">{{ rev.review }}</p>
+                {% else %}
+                  <p class="review-text" style="color:var(--color-muted); font-style:italic;">Memberi penilaian {{ rev.rating }} dari 5 bintang.</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="reviews-empty">
+            <p style="color:var(--color-muted); margin:0;">Belum ada ulasan untuk produk ini. Jadilah yang pertama berbagi penilaian!</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <dialog class="rating-modal" id="rating-modal" aria-labelledby="rating-modal-title">
+      <div class="rating-modal__content">
+        <div class="rating-modal__header">
+          <div>
+            <span class="eyebrow">ULASAN &amp; PENILAIAN</span>
+            <h2 id="rating-modal-title">{% if user_rating %}Perbarui penilaian{% else %}Beri penilaian{% endif %}</h2>
+          </div>
+          <button type="button" class="rating-modal__close" data-close-rating-modal aria-label="Tutup formulir penilaian">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        {% if user.is_authenticated %}
+          <p class="rating-modal__intro">Bagikan penilaian dan pengalaman Anda terhadap produk ini. Anda tetap dapat memberi penilaian meskipun belum pernah membelinya.</p>
+          <form id="rating-form" class="rating-modal__form" action="{% url 'store:rate_product' product.slug %}" method="post">
+            {% csrf_token %}
+            <div class="star-rating-selector">
+              <span class="rating-modal__label">Pilih bintang:</span>
+              <div class="interactive-stars" id="star-picker">
+                {% for val in "12345" %}
+                  <button type="button" class="star-btn {% if user_rating and user_rating.rating >= forloop.counter or not user_rating and forloop.counter <= 5 %}selected{% endif %}" data-val="{{ forloop.counter }}" aria-label="{{ forloop.counter }} bintang">★</button>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="rating" id="rating-value-input" value="{{ user_rating.rating|default:'5' }}">
+              <span id="star-score-text" class="rating-modal__score">{{ user_rating.rating|default:'5' }}/5 bintang</span>
+            </div>
+
+            <div class="rating-modal__review">
+              <label for="review-textarea">Ulasan (opsional)</label>
+              <textarea id="review-textarea" name="review" rows="4" class="form-textarea" placeholder="Ceritakan pendapat Anda tentang kualitas, bahan, atau desain produk ini.">{{ user_rating.review|default:'' }}</textarea>
+            </div>
+
+            <div class="rating-modal__actions">
+              <button type="submit" class="button button--accent" id="submit-rating-btn">
+                <i data-lucide="star"></i> {% if user_rating %}Simpan perubahan{% else %}Kirim penilaian{% endif %}
+              </button>
+              <span id="rating-status-msg" role="status"></span>
+            </div>
+          </form>
+        {% else %}
+          <div class="rating-login-prompt">
+            <i class="rating-login-prompt__icon" data-lucide="lock"></i>
+            <h3>Masuk untuk memberi penilaian</h3>
+            <p>Masuk ke akun Anda untuk berbagi penilaian dan ulasan produk ini.</p>
+            <a href="{% url 'store:login' %}?next={{ request.path }}#reviews-section" class="button button--dark">
+              Masuk dan beri penilaian
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </dialog>
+
     <!-- Related Products -->
     {% if related_products %}
       <section class="section" style="padding-top: 80px;">
@@ -273,6 +392,11 @@
         <div class="product-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
           {% for rel in related_products %}
             <article class="product-card">
+              {% if rel.free_shipping %}
+                <div class="product-card__badges">
+                  <span class="badge-tag badge-tag--shipping">Gratis Ongkir</span>
+                </div>
+              {% endif %}
               <a class="product-card__image" href="{% url 'store:product_detail' rel.slug %}">
                 {% if rel.image %}
                   <img src="{{ rel.image.url }}" alt="{{ rel.name }}" loading="lazy">
@@ -288,8 +412,25 @@
                 <h3 class="product-card__name">
                   <a href="{% url 'store:product_detail' rel.slug %}">{{ rel.name }}</a>
                 </h3>
+
+                <!-- User Rating Display -->
+                <div class="product-card__rating">
+                  {% if rel.total_ratings > 0 %}
+                    <span class="rating-stars rating-stars--active">
+                      {% for i in "12345" %}
+                        {% if rel.avg_rating >= forloop.counter %}★{% elif rel.avg_rating >= forloop.counter|add:"-0.5" %}★{% else %}☆{% endif %}
+                      {% endfor %}
+                    </span>
+                    <span class="rating-val">{{ rel.avg_rating|floatformat:1 }}</span>
+                    <span class="rating-qty">({{ rel.total_ratings }})</span>
+                  {% else %}
+                    <span class="rating-stars rating-stars--empty">☆☆☆☆☆</span>
+                    <span class="rating-empty-text">Belum ada penilaian</span>
+                  {% endif %}
+                </div>
+
                 <div class="product-card__footer">
-                  <span class="product-card__price">Rp {{ rel.base_price|floatformat:0 }}</span>
+                  <span class="product-card__price">Rp {{ rel.base_price|floatformat:0|intcomma }}</span>
                   <a href="{% url 'store:product_detail' rel.slug %}" class="button button--outline" style="min-height: 38px; padding: 0 14px; font-size: 0.8rem;">
                     Detail
                   </a>
@@ -361,31 +502,33 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 2. Custom Sablon Toggle & Price Calculation Logic
-  function updateSablonState() {
-    const isChecked = sablonCheckbox.checked;
+  if (sablonCheckbox && sablonHeader && sablonCard && sablonBody && sablonFeeNote) {
+    function updateSablonState() {
+      const isChecked = sablonCheckbox.checked;
 
-    if (isChecked) {
-      sablonCard.classList.add('active');
-      sablonBody.classList.add('open');
-      sablonFeeNote.style.display = 'inline-block';
-      totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE + SABLON_FEE);
-      nameInput.focus();
-    } else {
-      sablonCard.classList.remove('active');
-      sablonBody.classList.remove('open');
-      sablonFeeNote.style.display = 'none';
-      totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE);
+      if (isChecked) {
+        sablonCard.classList.add('active');
+        sablonBody.classList.add('open');
+        sablonFeeNote.style.display = 'inline-block';
+        totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE + SABLON_FEE);
+        if (nameInput) nameInput.focus();
+      } else {
+        sablonCard.classList.remove('active');
+        sablonBody.classList.remove('open');
+        sablonFeeNote.style.display = 'none';
+        totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE);
+      }
     }
+
+    sablonHeader.addEventListener('click', (e) => {
+      if (e.target !== sablonCheckbox) {
+        sablonCheckbox.checked = !sablonCheckbox.checked;
+      }
+      updateSablonState();
+    });
+
+    sablonCheckbox.addEventListener('change', updateSablonState);
   }
-
-  sablonHeader.addEventListener('click', (e) => {
-    if (e.target !== sablonCheckbox) {
-      sablonCheckbox.checked = !sablonCheckbox.checked;
-    }
-    updateSablonState();
-  });
-
-  sablonCheckbox.addEventListener('change', updateSablonState);
 
   // 3. Live Jersey Preview (foto jersey asli + overlay nama & nomor)
   const nameCounter = document.getElementById('name-counter');
@@ -427,48 +570,51 @@ document.addEventListener('DOMContentLoaded', () => {
     else backImg.addEventListener('load', applyPrintContrast);
   }
 
-  function renderNamePreview() {
-    // Spasi tidak dipangkas saat mengetik (agar "DE JONG" bisa ditulis);
-    // hanya hilangkan spasi di awal dan spasi ganda.
-    const caret = nameInput.selectionStart;
-    const cleaned = nameInput.value.replace(/^\s+/, '').replace(/\s{2,}/g, ' ').toUpperCase();
-    if (cleaned !== nameInput.value) {
-      nameInput.value = cleaned;
-      try { nameInput.setSelectionRange(caret, caret); } catch (err) { /* abaikan */ }
+  if (nameInput && previewName && nameCounter && backArt) {
+    function renderNamePreview() {
+      // Spasi tidak dipangkas saat mengetik (agar "DE JONG" bisa ditulis);
+      // hanya hilangkan spasi di awal dan spasi ganda.
+      const caret = nameInput.selectionStart;
+      const cleaned = nameInput.value.replace(/^\s+/, '').replace(/\s{2,}/g, ' ').toUpperCase();
+      if (cleaned !== nameInput.value) {
+        nameInput.value = cleaned;
+        try { nameInput.setSelectionRange(caret, caret); } catch (err) { /* abaikan */ }
+      }
+
+      const shown = cleaned.trim();
+      previewName.textContent = shown || 'NAMA';
+      previewName.classList.toggle('is-placeholder', !shown);
+      backArt.style.setProperty('--name-fit', Math.min(1, 12 / Math.max(shown.length, 1)).toFixed(3));
+      nameCounter.textContent = `${cleaned.length}/${NAME_MAX}`;
     }
 
-    const shown = cleaned.trim();
-    previewName.textContent = shown || 'NAMA';
-    previewName.classList.toggle('is-placeholder', !shown);
-    // Perkecil huruf otomatis jika nama panjang agar tetap muat di punggung
-    backArt.style.setProperty('--name-fit', Math.min(1, 12 / Math.max(shown.length, 1)).toFixed(3));
-    nameCounter.textContent = `${cleaned.length}/${NAME_MAX}`;
+    nameInput.addEventListener('input', renderNamePreview);
+    nameInput.addEventListener('blur', () => {
+      nameInput.value = nameInput.value.trim();
+      renderNamePreview();
+    });
   }
 
-  function renderNumberPreview() {
-    let val = numberInput.value;
-    if (val !== '') {
-      val = Math.max(0, Math.min(99, parseInt(val, 10) || 0));
-      numberInput.value = val;
-      previewNumber.textContent = val;
-      previewNumber.classList.remove('is-placeholder');
-    } else {
-      previewNumber.textContent = '00';
-      previewNumber.classList.add('is-placeholder');
+  if (numberInput && previewNumber) {
+    function renderNumberPreview() {
+      let val = numberInput.value;
+      if (val !== '') {
+        val = Math.max(0, Math.min(99, parseInt(val, 10) || 0));
+        numberInput.value = val;
+        previewNumber.textContent = val;
+        previewNumber.classList.remove('is-placeholder');
+      } else {
+        previewNumber.textContent = '00';
+        previewNumber.classList.add('is-placeholder');
+      }
     }
+
+    numberInput.addEventListener('input', renderNumberPreview);
+    // Cegah karakter non-angka yang tetap diterima input type=number
+    numberInput.addEventListener('keydown', (e) => {
+      if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
+    });
   }
-
-  nameInput.addEventListener('input', renderNamePreview);
-  nameInput.addEventListener('blur', () => {
-    nameInput.value = nameInput.value.trim();
-    renderNamePreview();
-  });
-
-  numberInput.addEventListener('input', renderNumberPreview);
-  // Cegah karakter non-angka yang tetap diterima input type=number
-  numberInput.addEventListener('keydown', (e) => {
-    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
-  });
 
   // 4. Quantity Stepper Controls
   qtyMinus.addEventListener('click', () => {
@@ -543,9 +689,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const newDrawer = doc.getElementById('cart-drawer-items');
-            const newSubtotal = doc.getElementById('drawer-subtotal');
+            const newFooter = doc.getElementById('cart-drawer-footer');
             if (newDrawer) document.getElementById('cart-drawer-items').innerHTML = newDrawer.innerHTML;
-            if (newSubtotal) document.getElementById('drawer-subtotal').textContent = newSubtotal.textContent;
+            const drawerFooter = document.getElementById('cart-drawer-footer');
+            if (newFooter && drawerFooter) {
+              drawerFooter.innerHTML = newFooter.innerHTML;
+              drawerFooter.hidden = newFooter.hidden;
+            }
             if (window.lucide) window.lucide.createIcons();
           });
       } else {
@@ -571,6 +721,118 @@ document.addEventListener('DOMContentLoaded', () => {
     // Submit normally so it adds to cart and proceeds
     form.submit();
   });
+
+  const ratingModal = document.getElementById('rating-modal');
+  const ratingOpenButtons = document.querySelectorAll('[data-open-rating-modal]');
+  const ratingCloseButtons = document.querySelectorAll('[data-close-rating-modal]');
+
+  ratingOpenButtons.forEach(button => {
+    button.addEventListener('click', () => ratingModal.showModal());
+  });
+
+  ratingCloseButtons.forEach(button => {
+    button.addEventListener('click', () => ratingModal.close());
+  });
+
+  ratingModal.addEventListener('click', (event) => {
+    if (event.target === ratingModal) ratingModal.close();
+  });
+
+  // 6. Interactive Star Rating Picker
+  const starButtons = document.querySelectorAll('#star-picker .star-btn');
+  const ratingInput = document.getElementById('rating-value-input');
+  const scoreText = document.getElementById('star-score-text');
+
+  if (starButtons.length && ratingInput) {
+    function updateStarDisplay(val) {
+      starButtons.forEach(btn => {
+        const btnVal = parseInt(btn.dataset.val);
+        if (btnVal <= val) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+      if (scoreText) scoreText.textContent = `${val}/5 bintang`;
+    }
+
+    starButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.dataset.val);
+        ratingInput.value = val;
+        updateStarDisplay(val);
+      });
+
+      btn.addEventListener('mouseenter', () => {
+        const val = parseInt(btn.dataset.val);
+        updateStarDisplay(val);
+      });
+    });
+
+    const starPicker = document.getElementById('star-picker');
+    if (starPicker) {
+      starPicker.addEventListener('mouseleave', () => {
+        const currentVal = parseInt(ratingInput.value) || 5;
+        updateStarDisplay(currentVal);
+      });
+    }
+  }
+
+  // 7. AJAX Rating Submit Handler
+  const ratingForm = document.getElementById('rating-form');
+  const ratingMsg = document.getElementById('rating-status-msg');
+  const submitRatingBtn = document.getElementById('submit-rating-btn');
+  const originalSubmitButtonContent = submitRatingBtn ? submitRatingBtn.innerHTML : '';
+
+  if (ratingForm) {
+    ratingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (submitRatingBtn) {
+        submitRatingBtn.disabled = true;
+        submitRatingBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Mengirim...';
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      const formData = new FormData(ratingForm);
+
+      try {
+        const res = await fetch(ratingForm.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData,
+        });
+
+        if (res.status === 401) {
+          window.location.href = '{% url "store:login" %}?next=' + encodeURIComponent(window.location.pathname + '#reviews-section');
+          return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          if (ratingMsg) {
+            ratingMsg.textContent = data.message;
+            ratingMsg.style.display = 'inline-block';
+          }
+          if (window.showToast) {
+            window.showToast(data.message, 'success');
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 900);
+        } else {
+          alert(data.message || 'Gagal mengirim penilaian.');
+        }
+      } catch (err) {
+        ratingForm.submit();
+      } finally {
+        if (submitRatingBtn) {
+          submitRatingBtn.disabled = false;
+          submitRatingBtn.innerHTML = originalSubmitButtonContent;
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+    });
+  }
 });
 </script>
 {% endblock %}

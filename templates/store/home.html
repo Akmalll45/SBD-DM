@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Hendra Sport | Official Football Jerseys & Custom Sablon{% endblock %}
 
@@ -154,6 +154,9 @@
       {% for product in featured_products %}
         <article class="product-card">
           <div class="product-card__badges">
+            {% if product.free_shipping %}
+              <span class="badge-tag badge-tag--shipping">Gratis Ongkir</span>
+            {% endif %}
             <span class="badge-tag badge-tag--accent">Featured</span>
             {% if 'jersey' in product.category.name|lower %}
               <span class="badge-tag badge-tag--sablon">Custom Sablon</span>
@@ -177,8 +180,24 @@
               <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
             </h3>
 
+            <!-- User Rating Display -->
+            <div class="product-card__rating">
+              {% if product.total_ratings > 0 %}
+                <span class="rating-stars rating-stars--active" title="Rating {{ product.avg_rating|floatformat:1 }} dari {{ product.total_ratings }} ulasan">
+                  {% for i in "12345" %}
+                    {% if product.avg_rating >= forloop.counter %}★{% elif product.avg_rating >= forloop.counter|add:"-0.5" %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </span>
+                <span class="rating-val">{{ product.avg_rating|floatformat:1 }}</span>
+                <span class="rating-qty">({{ product.total_ratings }})</span>
+              {% else %}
+                <span class="rating-stars rating-stars--empty" title="Belum ada ulasan">☆☆☆☆☆</span>
+                <span class="rating-empty-text">Belum ada rating</span>
+              {% endif %}
+            </div>
+
             <div class="product-card__footer">
-              <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+              <span class="product-card__price">Rp {{ product.base_price|floatformat:0|intcomma }}</span>
               <a href="{% url 'store:product_detail' product.slug %}" class="button button--dark" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
                 Detail <i data-lucide="chevron-right" style="width: 14px;"></i>
               </a>
@@ -228,6 +247,9 @@
       {% for product in latest_products %}
         <article class="product-card">
           <div class="product-card__badges">
+            {% if product.free_shipping %}
+              <span class="badge-tag badge-tag--shipping">Gratis Ongkir</span>
+            {% endif %}
             <span class="badge-tag" style="background: var(--color-primary); color: #fff;">New Drop</span>
             {% if 'jersey' in product.category.name|lower %}
               <span class="badge-tag badge-tag--sablon">Custom Sablon</span>
@@ -251,8 +273,24 @@
               <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
             </h3>
 
+            <!-- User Rating Display -->
+            <div class="product-card__rating">
+              {% if product.total_ratings > 0 %}
+                <span class="rating-stars rating-stars--active" title="Rating {{ product.avg_rating|floatformat:1 }} dari {{ product.total_ratings }} ulasan">
+                  {% for i in "12345" %}
+                    {% if product.avg_rating >= forloop.counter %}★{% elif product.avg_rating >= forloop.counter|add:"-0.5" %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </span>
+                <span class="rating-val">{{ product.avg_rating|floatformat:1 }}</span>
+                <span class="rating-qty">({{ product.total_ratings }})</span>
+              {% else %}
+                <span class="rating-stars rating-stars--empty" title="Belum ada ulasan">☆☆☆☆☆</span>
+                <span class="rating-empty-text">Belum ada rating</span>
+              {% endif %}
+            </div>
+
             <div class="product-card__footer">
-              <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+              <span class="product-card__price">Rp {{ product.base_price|floatformat:0|intcomma }}</span>
               <a href="{% url 'store:product_detail' product.slug %}" class="button button--outline" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
                 Pilih <i data-lucide="chevron-right" style="width: 14px;"></i>
               </a>

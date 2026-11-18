@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Konfirmasi Pesanan | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+  <div class="container">
+    <div class="section-heading" style="margin-bottom: 24px;">
+      <div>
+        <span class="eyebrow">LANGKAH 3 DARI 5</span>
+        <h2>Konfirmasi Pesanan</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:checkout' %}">
+        <i data-lucide="arrow-left" style="width: 16px;"></i> Ubah pengiriman
+      </a>
+    </div>
+
+    <div class="checkout-grid">
+      <div class="checkout-form-area">
+        <div class="checkout-card" style="margin-bottom: 20px;">
+          <h3><i data-lucide="map-pin" style="color: var(--color-accent); width: 22px;"></i> Tujuan Pengiriman</h3>
+          <strong>{{ shipping.full_name }} · {{ shipping.phone }}</strong>
+          <p>{{ shipping.address }}<br>{{ shipping.city }}</p>
+          <p style="margin-bottom: 0;"><strong>{{ courier_label }}</strong> · Ongkir:
+            {% if free_shipping %}<strong>Gratis</strong>{% else %}<strong>Rp {{ shipping_cost|floatformat:0|intcomma }}</strong>{% endif %}
+          </p>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="checkout-card">
+            <h3><i data-lucide="credit-card" style="color: var(--color-accent); width: 22px;"></i> Pilih Pembayaran</h3>
+            {% if payment_methods %}
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                {% for method, label in payment_methods %}
+                  <label style="display:flex; align-items:flex-start; gap:12px; padding:16px; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;">
+                    <input type="radio" name="payment_method" value="{{ method }}" {% if forloop.first %}checked{% endif %} required style="margin-top:4px; accent-color:var(--color-primary);">
+                    <span>
+                      <strong style="display:block;">{{ label }}</strong>
+                      {% if method == 'midtrans' %}
+                        <small>Bayar melalui Snap Sandbox. QRIS, Virtual Account, dan metode aktif lainnya dipilih pada halaman Midtrans.</small>
+                      {% else %}
+                        <small>Unggah bukti transfer untuk diverifikasi admin sebelum pesanan diproses.</small>
+                      {% endif %}
+                    </span>
+                  </label>
+                {% endfor %}
+              </div>
+              <button type="submit" class="button button--accent" style="width:100%; min-height:52px; margin-top:20px;">
+                Buat Pesanan &amp; Lanjutkan Pembayaran
+                <i data-lucide="arrow-right" style="width:17px;"></i>
+              </button>
+            {% else %}
+              <p role="alert" style="color:#b91c1c;">Belum ada metode pembayaran yang dikonfigurasi. Admin perlu mengatur kredensial Midtrans Sandbox atau rekening transfer.</p>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+
+      <aside class="summary-box" aria-label="Rincian pembayaran">
+        <h3>Rincian Pesanan</h3>
+        {% for item in items %}
+          <div class="checkout-item-compact">
+            <div>
+              <strong style="display:block;">{{ item.product.name }}</strong>
+              <span style="font-size:.78rem;color:var(--color-muted);">{% if item.product.is_equipment %}Produk{% else %}{{ item.variant.size }}{% endif %} · {{ item.quantity }} item{% if item.has_sablon %} · Sablon {{ item.custom_name }} #{{ item.custom_number }}{% endif %}</span>
+            </div>
+            <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
+          </div>
+        {% endfor %}
+        <div class="summary-rows">
+          <div class="summary-line"><span>Subtotal produk</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong></div>
+          <div class="summary-line"><span>{{ courier_label }}</span><strong>{% if free_shipping %}Gratis{% else %}Rp {{ shipping_cost|floatformat:0|intcomma }}{% endif %}</strong></div>
+          <div class="summary-total-line"><span>Total pembayaran</span><strong>Rp {{ total|floatformat:0|intcomma }}</strong></div>
+        </div>
+        <p style="font-size:.8rem;color:var(--color-muted);">Stok akan dicadangkan setelah pesanan dibuat. Status pesanan baru berubah menjadi diproses setelah pembayaran terverifikasi.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

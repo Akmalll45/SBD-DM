@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}
   {% if active_category %}{{ active_category.name }} | Hendra Sport{% else %}All Jerseys & Sports Gear | Hendra Sport{% endif %}
@@ -89,7 +89,7 @@
         <span class="badge-tag badge-tag--sablon" style="margin-bottom:8px;">Fitur Unggulan</span>
         <h4 style="border:none; margin-bottom:8px; padding-bottom:0;">Custom Sablon</h4>
         <p style="font-size:0.82rem; color:var(--color-muted); line-height:1.5; margin-bottom:12px;">
-          Setiap jersey sepak bola dapat ditambahkan sablon nama & nomor punggung dengan biaya flat Rp {{ SABLON_FEE|floatformat:0 }}.
+          Setiap jersey sepak bola dapat ditambahkan sablon nama & nomor punggung dengan biaya flat Rp {{ SABLON_FEE|floatformat:0|intcomma }}.
         </p>
       </div>
 
@@ -123,6 +123,7 @@
           </label>
           <select id="sort-select" name="sort" onchange="document.getElementById('sort-form').submit();">
             <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Terbaru</option>
+            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating Tertinggi</option>
             <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Harga: Rendah ke Tinggi</option>
             <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Harga: Tinggi ke Rendah</option>
             <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nama Produk (A-Z)</option>
@@ -136,6 +137,9 @@
           {% for product in products %}
             <article class="product-card">
               <div class="product-card__badges">
+                {% if product.free_shipping %}
+                  <span class="badge-tag badge-tag--shipping">Gratis Ongkir</span>
+                {% endif %}
                 {% if product.is_featured %}
                   <span class="badge-tag badge-tag--accent">Featured</span>
                 {% endif %}
@@ -161,8 +165,24 @@
                   <a href="{% url 'store:product_detail' product.slug %}">{{ product.name }}</a>
                 </h3>
 
+                <!-- User Rating Display -->
+                <div class="product-card__rating">
+                  {% if product.total_ratings > 0 %}
+                    <span class="rating-stars rating-stars--active" title="Rating {{ product.avg_rating|floatformat:1 }} dari {{ product.total_ratings }} ulasan">
+                      {% for i in "12345" %}
+                        {% if product.avg_rating >= forloop.counter %}★{% elif product.avg_rating >= forloop.counter|add:"-0.5" %}★{% else %}☆{% endif %}
+                      {% endfor %}
+                    </span>
+                    <span class="rating-val">{{ product.avg_rating|floatformat:1 }}</span>
+                    <span class="rating-qty">({{ product.total_ratings }})</span>
+                  {% else %}
+                    <span class="rating-stars rating-stars--empty" title="Belum ada ulasan">☆☆☆☆☆</span>
+                    <span class="rating-empty-text">Belum ada rating</span>
+                  {% endif %}
+                </div>
+
                 <div class="product-card__footer">
-                  <span class="product-card__price">Rp {{ product.base_price|floatformat:0 }}</span>
+                  <span class="product-card__price">Rp {{ product.base_price|floatformat:0|intcomma }}</span>
                   <a href="{% url 'store:product_detail' product.slug %}" class="button button--dark" style="min-height: 38px; padding: 0 16px; font-size: 0.8rem;">
                     Detail <i data-lucide="arrow-right" style="width: 14px;"></i>
                   </a>

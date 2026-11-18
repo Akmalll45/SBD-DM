@@ -38,6 +38,10 @@
           <i data-lucide="shopping-bag"></i>
           <span>Pesanan & Sablon</span>
         </a>
+        <a href="{% url 'dashboard:payment_list' %}" class="admin-nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+          <i data-lucide="credit-card"></i>
+          <span>Pembayaran</span>
+        </a>
         <a href="{% url 'dashboard:product_list' %}" class="admin-nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}">
           <i data-lucide="shirt"></i>
           <span>Produk & Stok</span>

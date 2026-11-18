@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if address %}Ubah{% else %}Tambah{% endif %} Alamat | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="account-section">
+  <div class="container account-profile">
+    <header class="account-page-heading">
+      <div>
+        <p class="eyebrow">BUKU ALAMAT</p>
+        <h1>{% if address %}Ubah alamat{% else %}Tambah alamat{% endif %}</h1>
+        <p>Lengkapi detail penerima dan alamat pengiriman.</p>
+      </div>
+      <a class="account-profile__back" href="{% url 'accounts:profile' %}">Kembali ke profil</a>
+    </header>
+
+    <form class="profile-card address-edit-form" method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="profile-form-grid">
+        {% for field in form %}
+          <div class="account-field {% if field.name == 'detail_address' %}account-field--full{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+              <label class="profile-checkbox-label">{{ field }} {{ field.label }}</label>
+            {% else %}
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="profile-form-actions">
+        <a class="button button--outline" href="{% url 'accounts:profile' %}">Batal</a>
+        <button class="button button--accent" type="submit">Simpan alamat</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

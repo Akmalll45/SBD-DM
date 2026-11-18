@@ -21,7 +21,11 @@
       {% for order in page_obj %}
         <div class="account-order-row">
           <span><strong>Pesanan #{{ order.id }}</strong><small>{{ order.created_at|date:"d M Y, H:i" }} · {{ order.item_count }} item</small></span>
-          <span class="account-order-row__summary"><strong>Rp {{ order.total|floatformat:0|intcomma }}</strong><small class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</small></span>
+          <span class="account-order-row__summary">
+            <strong>Rp {{ order.total|floatformat:0|intcomma }}</strong>
+            <small class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</small>
+            <small>Pembayaran: {{ order.payment.get_status_display }}</small>
+          </span>
           <a class="button button--outline account-order-row__action" href="{% url 'accounts:order_detail' order.id %}">Detail</a>
         </div>
       {% empty %}

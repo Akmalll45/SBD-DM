@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductVariant, Cart, CartItem, Order, OrderItem
+from .models import Category, Product, ProductVariant, Cart, CartItem, Order, OrderItem, ProductRating
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -17,8 +17,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'base_price', 'stock', 'is_featured', 'created_at')
-    list_filter = ('category', 'is_featured', 'created_at')
+    list_display = ('name', 'category', 'product_type', 'base_price', 'stock', 'is_featured', 'created_at')
+    list_filter = ('category', 'product_type', 'is_featured', 'created_at')
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
     inlines = [ProductVariantInline]
@@ -52,3 +52,14 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'created_at')
     search_fields = ('id', 'full_name', 'phone', 'city', 'user__username')
     inlines = [OrderItemInline]
+
+
+@admin.register(ProductRating)
+class ProductRatingAdmin(admin.ModelAdmin):
+    list_display = ('product', 'user', 'rating', 'review_snippet', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('product__name', 'user__username', 'review')
+
+    @admin.display(description='Ulasan')
+    def review_snippet(self, obj):
+        return (obj.review[:50] + '...') if len(obj.review) > 50 else (obj.review or '-')

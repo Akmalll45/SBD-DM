@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_admin.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Kelola Pesanan & Sablon{% endblock %}
 {% block page_title %}Manajemen Pesanan & Sablon{% endblock %}
@@ -62,7 +62,8 @@
           <th>Kota Pengiriman</th>
           <th>Spesifikasi Sablon</th>
           <th>Total Tagihan</th>
-          <th>Status</th>
+          <th>Status Pesanan</th>
+          <th>Status Pembayaran</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -101,7 +102,7 @@
             </td>
             <td>
               <strong style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--admin-text-main);">
-                Rp {{ order.total|floatformat:0 }}
+                Rp {{ order.total|floatformat:0|intcomma }}
               </strong>
             </td>
             <td>
@@ -109,6 +110,7 @@
                 {{ order.get_status_display }}
               </span>
             </td>
+            <td>{{ order.payment.get_status_display }}</td>
             <td>
               <a href="{% url 'dashboard:order_detail' order.id %}" class="btn-admin btn-admin--primary btn-admin--sm">
                 Detail <i data-lucide="arrow-right" style="width: 13px;"></i>
@@ -117,7 +119,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+            <td colspan="9" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
               <i data-lucide="inbox" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
               <div>Tidak ada data pesanan yang sesuai filter.</div>
             </td>

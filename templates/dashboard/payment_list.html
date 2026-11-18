@@ -1,0 +1,42 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Manajemen Pembayaran{% endblock %}
+{% block page_title %}Manajemen Pembayaran{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+  <div style="padding:16px 24px;border-bottom:1px solid var(--admin-border);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <a class="btn-admin btn-admin--sm {% if not status_filter %}btn-admin--primary{% else %}btn-admin--outline{% endif %}" href="{% url 'dashboard:payment_list' %}">Semua</a>
+    {% for value, label in status_choices %}
+      <a class="btn-admin btn-admin--sm {% if status_filter == value %}btn-admin--primary{% else %}btn-admin--outline{% endif %}" href="{% url 'dashboard:payment_list' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+    <strong style="margin-left:auto;">Menunggu verifikasi: {{ pending_verification_count }}</strong>
+  </div>
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr><th>Pesanan</th><th>Pelanggan</th><th>Metode</th><th>Jumlah</th><th>Status pembayaran</th><th>Terakhir diperbarui</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+          <tr>
+            <td><a href="{% url 'dashboard:order_detail' payment.order_id %}">#{{ payment.order_id }}</a></td>
+            <td>{{ payment.order.full_name }}<small style="display:block;color:var(--admin-text-muted);">{{ payment.order.user.username }}</small></td>
+            <td>{{ payment.get_method_display }}</td>
+            <td><strong>Rp {{ payment.amount|floatformat:0|intcomma }}</strong></td>
+            <td>{{ payment.get_status_display }}</td>
+            <td>{{ payment.updated_at|date:"d M Y, H:i" }}</td>
+            <td>
+              {% if payment.proof %}<a class="btn-admin btn-admin--outline btn-admin--sm" href="{% url 'store:payment_proof_file' payment.order_id %}">Bukti</a>{% endif %}
+              <a class="btn-admin btn-admin--primary btn-admin--sm" href="{% url 'dashboard:order_detail' payment.order_id %}">Detail</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" style="text-align:center;padding:40px;">Belum ada data pembayaran.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
