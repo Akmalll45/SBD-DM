@@ -1,37 +1,32 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Account{% endblock %} | Hendra Sport</title>
+  <meta name="theme-color" content="#11150e">
+  <title>{% block title %}Akun{% endblock %} | Hendra Sport</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
-<style>
-  .auth__switch a {
-    color: #111 !important;
-    font-weight: 700;
-    text-decoration: none !important;
-    border-bottom: none !important;
-  }
-  .auth__switch a:hover {
-    background: #c6f432;
-  }
-</style>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=2.3">
 </head>
 <body>
   <main class="auth">
-    <section class="auth__card">
-      <a class="auth__brand" href="{% url 'store:home' %}">
-        <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Hendra Sport">
-      </a>
-      <p class="auth__eyebrow">{% block eyebrow %}{% endblock %}</p>
-      <h1 class="auth__title">{% block heading %}{% endblock %}</h1>
-      <p class="auth__intro">{% block intro %}{% endblock %}</p>
-      {% block content %}{% endblock %}
-    </section>
+    <div class="auth__shell">
+      <section class="auth__form-panel" aria-labelledby="auth-title">
+        <a class="auth__brand" href="{% url 'store:home' %}" aria-label="Hendra Sport, kembali ke beranda">
+          <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="">
+          <span>HENDRA <strong>SPORT</strong></span>
+        </a>
+        <p class="auth__eyebrow">{% block eyebrow %}{% endblock %}</p>
+        <h1 class="auth__title" id="auth-title">{% block heading %}{% endblock %}</h1>
+        <p class="auth__intro">{% block intro %}{% endblock %}</p>
+        {% block content %}{% endblock %}
+        <p class="auth__footnote"><span aria-hidden="true">●</span> Belanja lebih nyaman. Main lebih percaya diri.</p>
+      </section>
+    </div>
   </main>
+  <script src="{% static 'js/auth.js' %}?v=1.3"></script>
 </body>
 </html>

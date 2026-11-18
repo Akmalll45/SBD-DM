@@ -1,9 +1,9 @@
 {% extends "store/auth_base.html" %}
 
-{% block title %}Login{% endblock %}
-{% block eyebrow %}Welcome back{% endblock %}
-{% block heading %}Login{% endblock %}
-{% block intro %}Sign in and get back to the shop.{% endblock %}
+{% block title %}Masuk{% endblock %}
+{% block eyebrow %}Senang melihatmu kembali{% endblock %}
+{% block heading %}Masuk{% endblock %}
+{% block intro %}Masuk ke akunmu dan lanjutkan memilih perlengkapan favorit.{% endblock %}
 
 {% block content %}
   <form class="auth__form" method="post" action="{% url 'store:login' %}">
@@ -13,16 +13,29 @@
       <p class="auth__error" role="alert">{{ form.non_field_errors.0 }}</p>
     {% endif %}
     <div class="auth__field">
-      <label for="{{ form.username.id_for_label }}">Username</label>
+      <label for="{{ form.username.id_for_label }}">Nama pengguna</label>
       {{ form.username }}
-      {% if form.username.errors %}<span class="auth__error">{{ form.username.errors.0 }}</span>{% endif %}
+      {% if form.username.errors %}<span class="auth__error" role="alert">{{ form.username.errors.0 }}</span>{% endif %}
     </div>
     <div class="auth__field">
-      <label for="{{ form.password.id_for_label }}">Password</label>
-      {{ form.password }}
-      {% if form.password.errors %}<span class="auth__error">{{ form.password.errors.0 }}</span>{% endif %}
+      <label for="{{ form.password.id_for_label }}">Kata sandi</label>
+      <div class="auth__password-control">
+        {{ form.password }}
+        <button class="auth__password-toggle" type="button" aria-controls="{{ form.password.id_for_label }}" aria-label="Tampilkan kata sandi" aria-pressed="false" data-password-toggle>
+          <svg class="auth__password-icon auth__password-icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <svg class="auth__password-icon auth__password-icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="m3 3 18 18"></path>
+          </svg>
+        </button>
+      </div>
+      {% if form.password.errors %}<span class="auth__error" role="alert">{{ form.password.errors.0 }}</span>{% endif %}
     </div>
-    <button class="auth__submit" type="submit">Login</button>
+    <button class="auth__submit" type="submit">Masuk ke akun</button>
   </form>
-  <p class="auth__switch">New here? <a href="{% url 'store:register' %}">Create an account</a></p>
+  <p class="auth__switch">Belum punya akun? <a href="{% url 'store:register' %}">Daftar sekarang</a></p>
 {% endblock %}

@@ -120,5 +120,97 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => toast.remove(), 300);
     }, 3500);
   };
+
+  // ---------------------------------------------------------------------------
+  // Hero Stadium Energy Sparks & Embers Particles
+  // ---------------------------------------------------------------------------
+  const canvas = document.getElementById('hero-particles');
+  if (canvas && canvas.parentElement) {
+    const ctx = canvas.getContext('2d');
+    let width = (canvas.width = canvas.parentElement.offsetWidth);
+    let height = (canvas.height = canvas.parentElement.offsetHeight);
+
+    window.addEventListener('resize', () => {
+      if (canvas && canvas.parentElement) {
+        width = canvas.width = canvas.parentElement.offsetWidth;
+        height = canvas.height = canvas.parentElement.offsetHeight;
+      }
+    });
+
+    const particles = [];
+    const count = Math.min(45, Math.floor(width / 28));
+    const colors = [
+      'rgba(255, 85, 0, ',
+      'rgba(255, 140, 0, ',
+      'rgba(255, 215, 60, ',
+      'rgba(255, 255, 255, '
+    ];
+
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 2.2 + 0.8,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: Math.random() * 0.7 + 0.3,
+        speedY: -(Math.random() * 0.9 + 0.35),
+        speedX: (Math.random() - 0.5) * 0.7,
+        pulse: Math.random() * Math.PI,
+      });
+    }
+
+    let mouseX = -1000;
+    let mouseY = -1000;
+    const heroSection = canvas.closest('.hero');
+    if (heroSection) {
+      heroSection.addEventListener('mousemove', (e) => {
+        const rect = heroSection.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+      });
+      heroSection.addEventListener('mouseleave', () => {
+        mouseX = -1000;
+        mouseY = -1000;
+      });
+    }
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.pulse += 0.04;
+        const currentAlpha = Math.max(0.12, p.alpha + Math.sin(p.pulse) * 0.25);
+
+        // Cursor interactive repulsion
+        const dx = p.x - mouseX;
+        const dy = p.y - mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          const force = (120 - dist) / 120;
+          p.x += (dx / dist) * force * 1.8;
+          p.y += (dy / dist) * force * 1.8;
+        }
+
+        p.x += p.speedX;
+        p.y += p.speedY;
+
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+        if (p.x < -10) p.x = width + 10;
+        if (p.x > width + 10) p.x = -10;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + currentAlpha + ')';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff5500';
+        ctx.fill();
+      }
+      requestAnimationFrame(renderParticles);
+    }
+    requestAnimationFrame(renderParticles);
+  }
 });
 

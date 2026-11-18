@@ -6,22 +6,43 @@
 {% block content %}
 <!-- Hero Section -->
 <section class="hero">
-  <div class="hero__media" role="img" aria-label="Sepak bola dan perlengkapan olahraga modern"></div>
+  <!-- Dynamic Moving Background / Video -->
+  <div class="hero__media-wrapper">
+    <!-- Background Video (Autoplay, Loop, Muted) -->
+    <video class="hero__video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1920&q=85" oncanplay="this.style.opacity='0.85';" onerror="this.style.display='none';">
+      <!-- Local video if user places hero-sports.mp4 into static/videos/ -->
+      <source src="{% static 'videos/hero-sports.mp4' %}" type="video/mp4">
+      <!-- High-res football match cinematic stream -->
+      <source src="https://assets.mixkit.co/videos/preview/mixkit-football-player-taking-a-penalty-kick-40871-large.mp4" type="video/mp4">
+    </video>
+    <!-- Animated Fallback Background Image (Ken Burns continuous cinematic zoom & pan) -->
+    <div class="hero__media" role="img" aria-label="Sepak bola dan perlengkapan olahraga modern"></div>
+  </div>
+
+  <!-- Atmospheric Lighting & Gradient Overlay -->
   <div class="hero__overlay"></div>
-  <div class="container hero__content">
-    <p class="eyebrow" style="color: var(--color-accent); font-weight: 800;">OFFICIAL FOOTBALL & SPORTS GEAR</p>
-    <h1>GEAR UP.<br>PUSH YOUR LIMITS.</h1>
-    <p>
-      Pusat jersey sepak bola klub & timnas premium. Personalisasikan jersey idolamu dengan fitur 
-      <strong>Custom Sablon</strong> resmi: nama dan nomor punggung idamanmu berstandar pro player.
-    </p>
-    <div class="hero__actions">
-      <a class="button button--accent" href="{% url 'store:shop' %}">
-        Belanja Sekarang <i data-lucide="arrow-right" style="width: 18px;"></i>
-      </a>
-      <a class="button button--outline-light" href="{% url 'store:shop' %}?category=football-jerseys">
-        Koleksi Jersey Sepak Bola
-      </a>
+  <div class="hero__light-sweep"></div>
+  <div class="hero__glow"></div>
+  <canvas id="hero-particles" class="hero__particles"></canvas>
+
+  <div class="container" style="position: relative; z-index: 3;">
+    <div class="hero__content" style="text-align: left; margin-left: 0; margin-right: auto;">
+      <p class="eyebrow" style="color: var(--color-accent); font-weight: 800; text-align: left;">
+        <span class="live-dot"></span> OFFICIAL FOOTBALL & SPORTS GEAR
+      </p>
+      <h1 style="text-align: left;">GEAR UP<br><span class="text-shimmer">PUSH YOUR LIMITS</span></h1>
+      <p style="text-align: left;">
+        Pusat jersey sepak bola klub & timnas premium. <br>Personalisasikan jersey idolamu dengan fitur 
+        <strong>Custom Sablon</strong> resmi nama dan nomor punggung idamanmu berstandar pro player
+      </p>
+      <div class="hero__actions" style="justify-content: flex-start;">
+        <a class="button button--accent btn-shine" href="{% url 'store:shop' %}">
+          Belanja Sekarang <i data-lucide="arrow-right" style="width: 18px;"></i>
+        </a>
+        <a class="button button--outline-light" href="{% url 'store:shop' %}?category=football-jerseys">
+          Koleksi Jersey Sepak Bola
+        </a>
+      </div>
     </div>
   </div>
 </section>
