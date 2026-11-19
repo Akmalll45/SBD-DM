@@ -1,4 +1,4 @@
-﻿asgiref==3.13.0
+asgiref==3.13.0
 Django==5.2.6
 mysqlclient==2.3.1
 pillow==12.3.0
