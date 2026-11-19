@@ -3,6 +3,7 @@ Django settings for henra project.
 """
 
 from pathlib import Path
+import sys
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
 
@@ -71,8 +72,6 @@ WSGI_APPLICATION = 'henra.wsgi.application'
 # Database configuration
 # Default to SQLite so the app and admin run immediately with all existing data.
 # Set DB_ENGINE=mysql in .env when you want to use MySQL.
-
-# Database configuration
 DB_ENGINE = config('DB_ENGINE', default='sqlite3').lower()
 
 if DB_ENGINE == 'mysql':
@@ -84,8 +83,17 @@ if DB_ENGINE == 'mysql':
             'PASSWORD': config('DB_PASSWORD', default=''),
             'HOST': config('DB_HOST', default='127.0.0.1'),
             'PORT': config('DB_PORT', default='3306'),
+            'CONN_MAX_AGE': 60,
+            'CONN_HEALTH_CHECKS': True,
             'OPTIONS': {
                 'charset': 'utf8mb4',
+                'ssl_ca': config('DB_SSL_CA'),
+                'ssl_verify_cert': True,
+                'ssl_verify_identity': True,
+                'connect_timeout': config('DB_CONNECT_TIMEOUT', default=20, cast=int),
+                'read_timeout': config('DB_READ_TIMEOUT', default=30, cast=int),
+                'write_timeout': config('DB_WRITE_TIMEOUT', default=30, cast=int),
+                'bind_address': '0.0.0.0' if sys.platform == 'win32' else None,
             },
         }
     }
@@ -97,7 +105,6 @@ else:
         }
     }
 
-    
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
