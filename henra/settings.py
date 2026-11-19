@@ -10,9 +10,6 @@ from django.core.exceptions import ImproperlyConfigured
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-5q+po#@y2pcdn8^c#p=dumv*9b69p#nq-+%o4masbz%3&!$c^$')
-
 def _cast_bool(val):
     if isinstance(val, bool):
         return val
@@ -20,9 +17,17 @@ def _cast_bool(val):
 
 DEBUG = config('DEBUG', default=True, cast=_cast_bool)
 
+SECRET_KEY = config('SECRET_KEY', default='')
+
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-local-development-only'
+    else:
+        raise ImproperlyConfigured(
+            'SECRET_KEY wajib diatur untuk production.'
+        )
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -72,9 +77,39 @@ WSGI_APPLICATION = 'henra.wsgi.application'
 # Database configuration
 # Default to SQLite so the app and admin run immediately with all existing data.
 # Set DB_ENGINE=mysql in .env when you want to use MySQL.
+# Database configuration
 DB_ENGINE = config('DB_ENGINE', default='sqlite3').lower()
 
 if DB_ENGINE == 'mysql':
+    DB_SSL_CA = Path(config(
+        'DB_SSL_CA',
+        default=str(BASE_DIR / 'certs' / 'isrgrootx1.pem'),
+    ))
+
+    if not DB_SSL_CA.is_file():
+        raise ImproperlyConfigured(
+            f'SSL certificate tidak ditemukan: {DB_SSL_CA}'
+        )
+
+    MYSQL_OPTIONS = {
+        'charset': 'utf8mb4',
+        'ssl_ca': str(DB_SSL_CA),
+        'ssl_verify_cert': True,
+        'ssl_verify_identity': True,
+        'connect_timeout': config(
+            'DB_CONNECT_TIMEOUT', default=20, cast=int
+        ),
+        'read_timeout': config(
+            'DB_READ_TIMEOUT', default=30, cast=int
+        ),
+        'write_timeout': config(
+            'DB_WRITE_TIMEOUT', default=30, cast=int
+        ),
+    }
+
+    if sys.platform == 'win32':
+        MYSQL_OPTIONS['bind_address'] = '0.0.0.0'
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -83,18 +118,8 @@ if DB_ENGINE == 'mysql':
             'PASSWORD': config('DB_PASSWORD', default=''),
             'HOST': config('DB_HOST', default='127.0.0.1'),
             'PORT': config('DB_PORT', default='3306'),
-            'CONN_MAX_AGE': 60,
-            'CONN_HEALTH_CHECKS': True,
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-                'ssl_ca': config('DB_SSL_CA'),
-                'ssl_verify_cert': True,
-                'ssl_verify_identity': True,
-                'connect_timeout': config('DB_CONNECT_TIMEOUT', default=20, cast=int),
-                'read_timeout': config('DB_READ_TIMEOUT', default=30, cast=int),
-                'write_timeout': config('DB_WRITE_TIMEOUT', default=30, cast=int),
-                'bind_address': '0.0.0.0' if sys.platform == 'win32' else None,
-            },
+            'CONN_MAX_AGE': 0,
+            'OPTIONS': MYSQL_OPTIONS,
         }
     }
 else:
@@ -104,7 +129,6 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
