@@ -95,5 +95,5 @@ private_uploads/payment-proofs/
 # File pengujian dan kredensial lokal
 cek_password.py
 test_tidb.py
-isrgrootx1.pem
+/isrgrootx1.pem
 .env
