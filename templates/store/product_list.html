@@ -149,8 +149,8 @@
               </div>
 
               <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
-                {% if product.image %}
-                  <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                {% if product.display_image %}
+                  <img src="{{ product.display_image.url }}" alt="{{ product.name }}" loading="lazy">
                 {% else %}
                   <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
                     <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>

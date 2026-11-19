@@ -29,8 +29,8 @@
               <div class="cart-item-row" id="cart-item-{{ item.id }}">
                 <!-- Product Thumbnail -->
                 <a href="{% url 'store:product_detail' item.product.slug %}" class="cart-item-thumb">
-                  {% if item.product.image %}
-                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                  {% if item.product.display_image %}
+                    <img src="{{ item.product.display_image.url }}" alt="{{ item.product.name }}">
                   {% else %}
                     <i data-lucide="shirt" style="width: 42px; height: 42px; color: var(--color-muted);"></i>
                   {% endif %}

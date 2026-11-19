@@ -2,8 +2,9 @@
 Django settings for henra project.
 """
 
-from pathlib import Path
+import os
 import sys
+from pathlib import Path
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
 
@@ -15,7 +16,22 @@ def _cast_bool(val):
         return val
     return str(val).strip().lower() in ('true', '1', 'yes', 'on', 't')
 
-DEBUG = config('DEBUG', default=True, cast=_cast_bool)
+VERCEL = config('VERCEL', default=False, cast=_cast_bool)
+DEBUG = config('DEBUG', default=not VERCEL, cast=_cast_bool)
+VERCEL_URL = config('VERCEL_URL', default='').strip()
+if VERCEL_URL.startswith(('https://', 'http://')):
+    VERCEL_URL = VERCEL_URL.split('://', 1)[1].split('/', 1)[0]
+
+CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
+
+if VERCEL and not CLOUDINARY_URL:
+    raise ImproperlyConfigured(
+        'CLOUDINARY_URL wajib dikonfigurasi agar upload media di Vercel tersimpan permanen.'
+    )
+
+if CLOUDINARY_URL:
+    os.environ.setdefault('CLOUDINARY_URL', CLOUDINARY_URL)
+    CLOUDINARY_STORAGE = {'PREFIX': ''}
 
 SECRET_KEY = config('SECRET_KEY', default='')
 
@@ -27,7 +43,37 @@ if not SECRET_KEY:
             'SECRET_KEY wajib diatur untuk production.'
         )
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1' if DEBUG else '',
+    cast=Csv(),
+)
+if VERCEL_URL and VERCEL_URL not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(VERCEL_URL)
+if not DEBUG and (not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS):
+    raise ImproperlyConfigured(
+        'ALLOWED_HOSTS production harus berisi hostname yang eksplisit.'
+    )
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='',
+    cast=Csv(),
+)
+if VERCEL_URL:
+    vercel_origin = f'https://{VERCEL_URL}'
+    if vercel_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(vercel_origin)
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = config(
+    'SECURE_SSL_REDIRECT',
+    default=not DEBUG,
+    cast=_cast_bool,
+)
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,8 +89,12 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
 ]
 
+if CLOUDINARY_URL:
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -79,6 +129,10 @@ WSGI_APPLICATION = 'henra.wsgi.application'
 # Set DB_ENGINE=mysql in .env when you want to use MySQL.
 # Database configuration
 DB_ENGINE = config('DB_ENGINE', default='sqlite3').lower()
+if VERCEL and DB_ENGINE != 'mysql':
+    raise ImproperlyConfigured(
+        'DB_ENGINE=mysql wajib dikonfigurasi di Vercel untuk menggunakan TiDB.'
+    )
 
 if DB_ENGINE == 'mysql':
     DB_SSL_CA = Path(config(
@@ -163,12 +217,28 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+STORAGES = {
+    'default': {
+        'BACKEND': (
+            'cloudinary_storage.storage.MediaCloudinaryStorage'
+            if CLOUDINARY_URL
+            else 'django.core.files.storage.FileSystemStorage'
+        ),
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if VERCEL
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 PAYMENT_PROOF_ROOT = config(
     'PAYMENT_PROOF_ROOT',
     default=str(BASE_DIR / 'private_uploads'),

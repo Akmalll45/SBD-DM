@@ -29,7 +29,7 @@
             {% if setting.logo %}
               <img src="{{ setting.logo.url }}" alt="Logo" style="max-height: 100%; max-width: 100%; object-fit: contain;">
             {% else %}
-              <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Logo Default" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <img src="{% static 'images/logo/hendra-sport-logo.jpg' %}" alt="Logo Default" style="max-height: 100%; max-width: 100%; object-fit: contain;">
               <span style="display:none; font-family: var(--font-heading); font-weight: 800; font-size: 0.9rem;">HENDRA SPORT</span>
             {% endif %}
           </div>

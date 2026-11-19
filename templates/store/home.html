@@ -10,8 +10,6 @@
   <div class="hero__media-wrapper">
     <!-- Background Video (Autoplay, Loop, Muted) -->
     <video class="hero__video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1920&q=85" oncanplay="this.style.opacity='0.85';" onerror="this.style.display='none';">
-      <!-- Local video if user places hero-sports.mp4 into static/videos/ -->
-      <source src="{% static 'videos/hero-sports.mp4' %}" type="video/mp4">
       <!-- High-res football match cinematic stream -->
       <source src="https://assets.mixkit.co/videos/preview/mixkit-football-player-taking-a-penalty-kick-40871-large.mp4" type="video/mp4">
     </video>
@@ -96,16 +94,26 @@
 
     <div class="category-grid">
       {% for category in categories %}
+        {% if category.slug == 'football-jerseys' %}
+          {% static 'images/categories/football-jerseys.svg' as category_fallback %}
+        {% elif category.slug == 'other-sports-jerseys' %}
+          {% static 'images/categories/other-sports-jerseys.svg' as category_fallback %}
+        {% elif category.slug == 'sports-equipment' %}
+          {% static 'images/categories/sports-equipment.svg' as category_fallback %}
+        {% elif category.slug == 'footwear-accessories' %}
+          {% static 'images/categories/footwear-accessories.svg' as category_fallback %}
+        {% else %}
+          {% static 'images/categories/default.svg' as category_fallback %}
+        {% endif %}
         <a class="category-card" href="{% url 'store:shop' %}?category={{ category.slug }}" style="position: relative; min-height: 240px; display: block; overflow: hidden;">
           {% if category.image %}
-            <img class="category-card__img" src="{{ category.image.url }}" alt="{{ category.name }}" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+            <img class="category-card__img" src="{{ category.image.url }}" data-fallback-src="{{ category_fallback }}" alt="{{ category.name }}" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
           {% else %}
             <img class="category-card__img"
-                 src="{% static 'images/categories/' %}{{ category.slug }}.jpg"
+                 src="{{ category_fallback }}"
                  alt="{{ category.name }}"
                  loading="lazy"
-                 data-fallback-src="{% static 'images/categories/' %}{{ category.slug }}.svg"
-                 onerror="this.onerror=null; this.src=this.dataset.fallbackSrc;"
+                 data-fallback-src="{% static 'images/categories/default.svg' %}"
                  style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
           {% endif %}
           <div class="category-card__bg" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
@@ -164,8 +172,8 @@
           </div>
 
           <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
-            {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% if product.display_image %}
+              <img src="{{ product.display_image.url }}" alt="{{ product.name }}" loading="lazy">
             {% else %}
               <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
                 <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>
@@ -257,8 +265,8 @@
           </div>
 
           <a class="product-card__image" href="{% url 'store:product_detail' product.slug %}">
-            {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% if product.display_image %}
+              <img src="{{ product.display_image.url }}" alt="{{ product.name }}" loading="lazy">
             {% else %}
               <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color: var(--color-muted);">
                 <i data-lucide="shirt" style="width: 56px; height: 56px; stroke-width: 1.2;"></i>

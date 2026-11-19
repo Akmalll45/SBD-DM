@@ -79,7 +79,7 @@
             {% if item.product.display_image %}
               <img src="{{ item.product.display_image.url }}" alt="{{ item.product_name }}">
             {% else %}
-              <img src="{% static 'images/categories/football-jerseys.svg' %}" alt="">
+              <img src="{% static 'images/categories/default.svg' %}" alt="Gambar {{ item.product_name }} belum tersedia">
             {% endif %}
             <div class="order-item-row__details">
               <strong>{{ item.product_name }}</strong>
