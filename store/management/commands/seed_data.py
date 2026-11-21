@@ -33,6 +33,7 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 40,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/madrid.jpg',
             },
             {
                 'name': 'Arsenal Home Jersey 24/25',
@@ -42,6 +43,7 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 35,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/arsenal.jpg',
             },
             {
                 'name': 'Timnas Indonesia Home Jersey 2024 Player Issue',
@@ -51,6 +53,7 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 50,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/timnas.jpg',
             },
             {
                 'name': 'Barcelona Home Jersey 24/25 125th Anniversary',
@@ -60,6 +63,7 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 25,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/barca_M0dpu0f.jpg',
             },
             {
                 'name': 'Manchester City Home Jersey 24/25',
@@ -69,6 +73,8 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 30,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/man_city_uUxXFf2.jpg',
+                'back_image': 'products/man_city_punggung.webp',
             },
             {
                 'name': 'LA Lakers Statement Edition Swingman Jersey',
@@ -78,6 +84,7 @@ class Command(BaseCommand):
                 'is_featured': False,
                 'stock': 20,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/basket_cwVAc6Q.jpg',
             },
             {
                 'name': 'Indonesia Badminton Pro Player Jersey',
@@ -87,6 +94,7 @@ class Command(BaseCommand):
                 'is_featured': False,
                 'stock': 30,
                 'sizes': ['S', 'M', 'L', 'XL'],
+                'image': 'products/bultang_BNI.jpg',
             },
             {
                 'name': 'Nike Flight Official Match Ball Football',
@@ -96,6 +104,7 @@ class Command(BaseCommand):
                 'is_featured': True,
                 'stock': 15,
                 'sizes': ['Standard'],
+                'image': 'products/bola.jpg',
             },
             {
                 'name': 'Pro Carbon Shield Shin Guards',
@@ -105,6 +114,7 @@ class Command(BaseCommand):
                 'is_featured': False,
                 'stock': 25,
                 'sizes': ['M', 'L'],
+                'image': 'products/deker.jpg',
             },
         ]
 
@@ -119,6 +129,8 @@ class Command(BaseCommand):
                     'description': p_data['description'],
                     'stock': p_data['stock'],
                     'is_featured': p_data['is_featured'],
+                    'image': p_data.get('image', ''),
+                    'back_image': p_data.get('back_image', ''),
                 }
             )
 
