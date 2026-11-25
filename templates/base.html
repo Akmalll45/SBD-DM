@@ -147,7 +147,7 @@
               </div>
               {% if item.has_sablon %}
                 <div class="drawer-item__sablon">
-                  Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
+                  Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
                 </div>
               {% endif %}
               <div class="drawer-item__bottom">

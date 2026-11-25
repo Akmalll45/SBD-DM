@@ -48,7 +48,7 @@
                   {% if item.has_sablon %}
                     <div class="cart-sablon-tag">
                       <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
-                      Custom Sablon: <strong>{{ item.custom_name }} #{{ item.custom_number }}</strong>
+                      Custom Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
                       <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0|intcomma }})</span>
                     </div>
                   {% endif %}

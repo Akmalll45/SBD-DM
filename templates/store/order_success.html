@@ -14,9 +14,9 @@
         <p style="color:var(--color-muted);">Pembayaran pesanan #{{ order.id }} sudah diterima dan pesanan sedang dipersiapkan.</p>
       {% else %}
         <div class="success-icon-badge"><i data-lucide="package-check" style="width:38px;height:38px;"></i></div>
-        <span class="eyebrow">LANGKAH 5 DARI 5</span>
-        <h1>Pesanan Berhasil Dibuat</h1>
-        <p style="color:var(--color-muted);">Selesaikan pembayaran dan pantau pembaruan status melalui riwayat pesanan.</p>
+        <span class="eyebrow" style="color:var(--color-success);">PESANAN BERHASIL</span>
+        <h1>Pesanan Berhasil Dikonfirmasi!</h1>
+        <p style="color:var(--color-muted);">Pesanan #{{ order.id }} telah diterima oleh sistem dan sedang diproses.</p>
       {% endif %}
 
       <div class="order-badge-pill">
@@ -44,7 +44,11 @@
             <div>
               <strong style="display:block;">{{ item.product_name }}</strong>
               <span style="font-size:.8rem;color:var(--color-muted);">{% if item.size == 'ALL' %}Produk{% else %}{{ item.size|default:"-" }}{% endif %} · {{ item.quantity }} × Rp {{ item.unit_price|floatformat:0|intcomma }}</span>
-              {% if item.has_sablon %}<div style="font-size:.78rem;color:#0284c7;font-weight:700;">Custom sablon: {{ item.custom_name }} #{{ item.custom_number }}</div>{% endif %}
+              {% if item.has_sablon %}
+                <div style="font-size:.78rem;color:#0284c7;font-weight:700;">
+                  Custom sablon: {{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}
+                </div>
+              {% endif %}
             </div>
             <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
           </div>
@@ -57,10 +61,7 @@
       </div>
 
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        {% if order.payment.status != 'paid' and order.status != 'cancelled' %}
-          <a href="{% url 'store:payment_detail' order.id %}" class="button button--accent">Lanjutkan Pembayaran</a>
-        {% endif %}
-        <a href="{% url 'store:invoice_pdf' order.id %}" class="button button--outline">Unduh Invoice PDF</a>
+        <a href="{% url 'store:invoice_pdf' order.id %}" class="button button--accent">Unduh Invoice PDF</a>
         <a href="{% url 'accounts:orders' %}" class="button button--outline">Riwayat Pesanan</a>
         <a href="{% url 'store:home' %}" class="button button--outline">Kembali ke Beranda</a>
       </div>

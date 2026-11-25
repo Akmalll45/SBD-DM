@@ -64,7 +64,7 @@
           <div class="checkout-item-compact">
             <div>
               <strong style="display:block;">{{ item.product.name }}</strong>
-              <span style="font-size:.78rem;color:var(--color-muted);">{% if item.product.is_equipment %}Produk{% else %}{{ item.variant.size }}{% endif %} · {{ item.quantity }} item{% if item.has_sablon %} · Sablon {{ item.custom_name }} #{{ item.custom_number }}{% endif %}</span>
+              <span style="font-size:.78rem;color:var(--color-muted);">{% if item.product.is_equipment %}Produk{% else %}{{ item.variant.size }}{% endif %} · {{ item.quantity }} item{% if item.has_sablon %} · Sablon {{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}{% endif %}</span>
             </div>
             <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
           </div>
