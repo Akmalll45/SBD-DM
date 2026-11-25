@@ -3,50 +3,6 @@
 
 {% block title %}Checkout — Pengiriman | Hendra Sport{% endblock %}
 
-{% block extra_js %}
-{% if not all_free_shipping %}
-<script>
-(function () {
-  // Data ongkir dari Django — { code: [label, amount] }
-  const shippingOptions = {
-    {% for code, label, amount in shipping_options %}"{{ code }}": { label: "{{ label }}", amount: {{ amount }} },
-    {% endfor %}
-  };
-  const subtotal = {{ items_subtotal|floatformat:0 }};
-
-  function formatRupiah(n) {
-    return 'Rp ' + n.toLocaleString('id-ID');
-  }
-
-  function updateSummary(selectedCode) {
-    const opt = shippingOptions[selectedCode];
-    const shippingLabel = document.getElementById('summary-shipping-label');
-    const totalEl = document.getElementById('summary-total');
-    if (!shippingLabel || !totalEl) return;
-    if (opt) {
-      shippingLabel.textContent = opt.amount === 0 ? 'GRATIS' : formatRupiah(opt.amount);
-      totalEl.textContent = formatRupiah(subtotal + opt.amount);
-    } else {
-      shippingLabel.textContent = 'Pilih layanan';
-      totalEl.textContent = formatRupiah(subtotal);
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    const select = document.getElementById('id_courier');
-    if (!select) return;
-    // Update saat halaman load (jika sudah ada pilihan)
-    updateSummary(select.value);
-    // Update setiap kali pilihan berubah
-    select.addEventListener('change', function () {
-      updateSummary(this.value);
-    });
-  });
-})();
-</script>
-{% endif %}
-{% endblock %}
-
 {% block content %}
 <section class="checkout-section">
   <div class="container">
