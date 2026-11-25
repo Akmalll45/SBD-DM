@@ -4,6 +4,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -379,11 +380,25 @@ def product_edit(request, product_id):
 def product_delete(request, product_id):
     """
     Delete a product from the database.
+    Produk yang sudah ada di riwayat pesanan tidak bisa dihapus (PROTECT),
+    karena data historis pesanan harus tetap terjaga.
+    Sebagai alternatif, admin bisa menonaktifkan produk agar tidak tampil di toko.
     """
     product = get_object_or_404(Product, id=product_id)
     product_name = product.name
-    product.delete()
-    messages.info(request, f'Produk "{product_name}" berhasil dihapus.')
+    try:
+        product.delete()
+        messages.success(request, f'Produk "{product_name}" berhasil dihapus.')
+    except ProtectedError:
+        # Produk ini sudah pernah dipesan — tidak boleh dihapus agar riwayat tetap terjaga.
+        # Nonaktifkan saja agar tidak tampil di toko.
+        product.is_active = False
+        product.save(update_fields=['is_active'])
+        messages.warning(
+            request,
+            f'Produk "{product_name}" tidak dapat dihapus karena sudah ada dalam riwayat pesanan. '
+            f'Produk telah dinonaktifkan dan tidak akan tampil di toko.'
+        )
     return redirect('dashboard:product_list')
 
 

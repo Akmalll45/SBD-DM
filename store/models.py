@@ -58,6 +58,10 @@ class Product(models.Model):
         help_text='Tampilkan label gratis ongkir pada kartu produk.',
     )
     is_featured = models.BooleanField(default=False)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Produk yang dinonaktifkan tidak tampil di toko, tapi riwayat pesanan tetap terjaga.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

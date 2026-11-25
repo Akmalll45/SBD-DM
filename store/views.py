@@ -143,7 +143,7 @@ def home(request):
 
     # Top 4 jerseys based on user ratings and cart additions
     featured_products = (
-        Product.objects.filter(jersey_filter)
+        Product.objects.filter(jersey_filter, is_active=True)
         .annotate(
             annotated_avg_rating=Coalesce(Avg('ratings__rating'), 0.0, output_field=FloatField()),
             annotated_rating_count=Count('ratings', distinct=True),
@@ -161,7 +161,7 @@ def home(request):
     )
 
     latest_products = (
-        Product.objects.all()
+        Product.objects.filter(is_active=True)
         .annotate(
             annotated_avg_rating=Coalesce(Avg('ratings__rating'), 0.0, output_field=FloatField()),
             annotated_rating_count=Count('ratings', distinct=True),
@@ -210,7 +210,7 @@ def product_list(request):
     """
     categories = Category.objects.all()
     products = (
-        Product.objects.all()
+        Product.objects.filter(is_active=True)
         .annotate(
             annotated_avg_rating=Coalesce(Avg('ratings__rating'), 0.0, output_field=FloatField()),
             annotated_rating_count=Count('ratings', distinct=True),

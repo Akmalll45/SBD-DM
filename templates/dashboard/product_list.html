@@ -54,6 +54,7 @@
           <th>Rincian Stok / Varian</th>
           <th>Total Stok</th>
           <th>Featured</th>
+          <th>Status</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -117,13 +118,24 @@
               {% endif %}
             </td>
             <td>
+              {% if product.is_active %}
+                <span style="color: var(--admin-success); font-weight: 600; font-size: 0.8rem; display:inline-flex; align-items:center; gap:4px;">
+                  <i data-lucide="eye" style="width:13px;"></i> Aktif
+                </span>
+              {% else %}
+                <span style="color: var(--admin-danger); font-weight: 600; font-size: 0.8rem; display:inline-flex; align-items:center; gap:4px;">
+                  <i data-lucide="eye-off" style="width:13px;"></i> Nonaktif
+                </span>
+              {% endif %}
+            </td>
+            <td>
               <div style="display: flex; gap: 6px;">
                 <a href="{% url 'dashboard:product_edit' product.id %}" class="btn-admin btn-admin--outline btn-admin--sm" title="Edit">
                   <i data-lucide="edit-3" style="width: 13px;"></i> Edit
                 </a>
-                <form action="{% url 'dashboard:product_delete' product.id %}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');" style="display:inline;">
+                <form action="{% url 'dashboard:product_delete' product.id %}" method="post" onsubmit="return confirm('Hapus produk ini?\n\nJika produk sudah pernah dipesan, produk akan DINONAKTIFKAN (tidak tampil di toko) agar riwayat pesanan tetap terjaga.');" style="display:inline;">
                   {% csrf_token %}
-                  <button type="submit" class="btn-admin btn-admin--danger btn-admin--sm" title="Hapus">
+                  <button type="submit" class="btn-admin btn-admin--danger btn-admin--sm" title="Hapus / Nonaktifkan">
                     <i data-lucide="trash-2" style="width: 13px;"></i>
                   </button>
                 </form>
@@ -132,7 +144,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+            <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
               <i data-lucide="package-search" style="width: 36px; height: 36px; margin-bottom: 8px;"></i>
               <div>Belum ada produk yang ditemukan.</div>
             </td>
