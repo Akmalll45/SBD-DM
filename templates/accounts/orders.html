@@ -13,9 +13,12 @@
     </div>
     <nav class="order-filter-tabs" aria-label="Filter status pesanan">
       <a class="{% if not selected_status %}active{% endif %}" href="{% url 'accounts:orders' %}">Semua</a>
-      {% for value, label in status_choices %}
-        <a class="{% if selected_status == value %}active{% endif %}" href="{% url 'accounts:orders' %}?status={{ value }}">{{ label }}</a>
-      {% endfor %}
+      <a class="{% if selected_status == 'pending' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=pending">Menunggu Pembayaran</a>
+      <a class="{% if selected_status == 'paid' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=paid">Sudah Dibayar</a>
+      <a class="{% if selected_status == 'processing' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=processing">Diproses</a>
+      <a class="{% if selected_status == 'shipped' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=shipped">Perlu Dikirim / Dikirim</a>
+      <a class="{% if selected_status == 'completed' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=completed">Selesai</a>
+      <a class="{% if selected_status == 'cancelled' %}active{% endif %}" href="{% url 'accounts:orders' %}?status=cancelled">Dibatalkan</a>
     </nav>
     <div class="account-panel">
       {% for order in page_obj %}

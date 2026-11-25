@@ -114,7 +114,10 @@ def order_list(request):
         .order_by('-created_at')
     )
     selected_status = request.GET.get('status', '')
-    if selected_status in Order.Status.values:
+    if selected_status == 'paid':
+        # "Sudah Dibayar" = payment lunas, tapi order bisa sudah lanjut ke processing/shipped/completed
+        orders = orders.filter(payment__status=Payment.Status.PAID)
+    elif selected_status in Order.Status.values:
         orders = orders.filter(status=selected_status)
     paginator = Paginator(orders, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
