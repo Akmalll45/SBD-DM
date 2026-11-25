@@ -1032,17 +1032,18 @@ def payment_proof_file(request, order_id):
     if not payment.proof:
         return HttpResponse(status=404)
     file_handle = payment.proof.open('rb')
-    extension = payment.proof.name.rpartition('.')[2].lower()
+    extension = payment.proof.name.rpartition('.')[2].lower() if '.' in payment.proof.name else ''
     content_type = {
         'pdf': 'application/pdf',
         'jpg': 'image/jpeg',
         'jpeg': 'image/jpeg',
         'png': 'image/png',
-    }[extension]
+    }.get(extension, 'application/octet-stream')
+    filename = f'bukti-transfer-{order_id}.{extension}' if extension else f'bukti-transfer-{order_id}'
     response = FileResponse(
         file_handle,
         as_attachment=True,
-        filename=f'bukti-transfer-{order_id}.{extension}',
+        filename=filename,
         content_type=content_type,
     )
     response['X-Content-Type-Options'] = 'nosniff'
