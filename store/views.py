@@ -569,12 +569,20 @@ def checkout(request):
         request.session['checkout_shipping'] = form.cleaned_data
         return redirect('store:checkout_confirm')
 
+    items_subtotal = sum((item.line_total for item in items), Decimal('0'))
+    all_free_shipping = items and all(item.product.free_shipping for item in items)
+    shipping_options = settings.CHECKOUT_SHIPPING_OPTIONS
+    first_courier_code = shipping_options[0][0] if shipping_options else 'regular'
+
     return render(request, 'store/checkout.html', {
         'cart': cart,
         'items': items,
         'form': form,
         'shipping_initial': shipping_initial,
-        'items_subtotal': sum((item.line_total for item in items), Decimal('0')),
+        'items_subtotal': items_subtotal,
+        'all_free_shipping': all_free_shipping,
+        'shipping_options': shipping_options,
+        'first_courier_code': first_courier_code,
     })
 
 

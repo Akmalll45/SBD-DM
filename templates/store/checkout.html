@@ -3,6 +3,50 @@
 
 {% block title %}Checkout — Pengiriman | Hendra Sport{% endblock %}
 
+{% block extra_js %}
+{% if not all_free_shipping %}
+<script>
+(function () {
+  // Data ongkir dari Django — { code: [label, amount] }
+  const shippingOptions = {
+    {% for code, label, amount in shipping_options %}"{{ code }}": { label: "{{ label }}", amount: {{ amount }} },
+    {% endfor %}
+  };
+  const subtotal = {{ items_subtotal|floatformat:0 }};
+
+  function formatRupiah(n) {
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+
+  function updateSummary(selectedCode) {
+    const opt = shippingOptions[selectedCode];
+    const shippingLabel = document.getElementById('summary-shipping-label');
+    const totalEl = document.getElementById('summary-total');
+    if (!shippingLabel || !totalEl) return;
+    if (opt) {
+      shippingLabel.textContent = opt.amount === 0 ? 'GRATIS' : formatRupiah(opt.amount);
+      totalEl.textContent = formatRupiah(subtotal + opt.amount);
+    } else {
+      shippingLabel.textContent = 'Pilih layanan';
+      totalEl.textContent = formatRupiah(subtotal);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('id_courier');
+    if (!select) return;
+    // Update saat halaman load (jika sudah ada pilihan)
+    updateSummary(select.value);
+    // Update setiap kali pilihan berubah
+    select.addEventListener('change', function () {
+      updateSummary(this.value);
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <section class="checkout-section">
   <div class="container">
@@ -47,6 +91,18 @@
               {{ form.address }}
               {{ form.address.errors }}
             </div>
+            {% if all_free_shipping %}
+            {# Semua produk gratis ongkir — sembunyikan dropdown #}
+            <div class="form-group checkout-courier-field">
+              <label>Layanan pengiriman</label>
+              <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; background:var(--color-soft); border:2px solid #22c55e; border-radius:var(--radius-md);">
+                <i data-lucide="truck" style="color:#22c55e; width:20px; flex-shrink:0;"></i>
+                <span style="font-weight:700; color:#16a34a;">GRATIS ONGKIR</span>
+              </div>
+              {# Kirim nilai courier hidden agar form tetap valid #}
+              <input type="hidden" name="courier" value="{{ first_courier_code }}">
+            </div>
+            {% else %}
             <div class="form-group checkout-courier-field">
               <label for="{{ form.courier.id_for_label }}">Layanan pengiriman *</label>
               <div class="checkout-courier-select">
@@ -55,11 +111,8 @@
                 <span class="checkout-courier-select__chevron" aria-hidden="true"><i data-lucide="chevron-down"></i></span>
               </div>
               {{ form.courier.errors }}
-              <small class="checkout-courier-note">
-                <i data-lucide="info" aria-hidden="true"></i>
-                <span>Tarif checkout bersifat flat dan dapat disesuaikan melalui environment settings.</span>
-              </small>
             </div>
+            {% endif %}
             <button type="submit" class="button button--accent" style="width: 100%; min-height: 52px;">
               Lanjut ke Konfirmasi <i data-lucide="arrow-right" style="width: 17px;"></i>
             </button>
@@ -92,11 +145,60 @@
         </div>
         <div class="summary-rows">
           <div class="summary-line"><span>Subtotal produk</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong></div>
-          <div class="summary-line"><span>Ongkos kirim</span><span>Pilih layanan</span></div>
-          <div class="summary-total-line"><span>Subtotal sementara</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong></div>
+          {% if all_free_shipping %}
+            <div class="summary-line"><span>Ongkos kirim</span><strong style="color:#16a34a;">GRATIS</strong></div>
+            <div class="summary-total-line"><span>Total</span><strong>Rp {{ items_subtotal|floatformat:0|intcomma }}</strong></div>
+          {% else %}
+            <div class="summary-line"><span>Ongkos kirim</span><span id="summary-shipping-label">Pilih layanan</span></div>
+            <div class="summary-total-line"><span>Subtotal sementara</span><strong id="summary-total">Rp {{ items_subtotal|floatformat:0|intcomma }}</strong></div>
+          {% endif %}
         </div>
       </aside>
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if not all_free_shipping %}
+<script>
+(function () {
+  // Data ongkir dari Django — { code: [label, amount] }
+  const shippingOptions = {
+    {% for code, label, amount in shipping_options %}"{{ code }}": { label: "{{ label }}", amount: {{ amount }} },
+    {% endfor %}
+  };
+  const subtotal = {{ items_subtotal|floatformat:0 }};
+
+  function formatRupiah(n) {
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+
+  function updateSummary(selectedCode) {
+    const opt = shippingOptions[selectedCode];
+    const shippingLabel = document.getElementById('summary-shipping-label');
+    const totalEl = document.getElementById('summary-total');
+    if (!shippingLabel || !totalEl) return;
+    if (opt) {
+      shippingLabel.textContent = opt.amount === 0 ? 'GRATIS' : formatRupiah(opt.amount);
+      totalEl.textContent = formatRupiah(subtotal + opt.amount);
+    } else {
+      shippingLabel.textContent = 'Pilih layanan';
+      totalEl.textContent = formatRupiah(subtotal);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('id_courier');
+    if (!select) return;
+    // Update saat halaman load (jika sudah ada pilihan)
+    updateSummary(select.value);
+    // Update setiap kali pilihan berubah
+    select.addEventListener('change', function () {
+      updateSummary(this.value);
+    });
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}
