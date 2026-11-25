@@ -120,16 +120,180 @@
             <p role="alert" style="color:#b91c1c;"><strong>Catatan verifikasi:</strong> {{ payment.rejection_note }}</p>
           {% endif %}
           {% if payment.status == 'pending' or payment.status == 'failed' %}
-            <form method="post" enctype="multipart/form-data" style="margin-top:20px;">
+            <form method="post" enctype="multipart/form-data" id="proof-upload-form" style="margin-top:20px;">
               {% csrf_token %}
               <input type="hidden" name="action" value="submit_proof">
               <div class="form-group">
-                <label for="{{ proof_form.proof.id_for_label }}">Unggah bukti transfer (JPG, PNG, atau PDF; maks. 5 MB)</label>
-                {{ proof_form.proof }}
+                <label for="{{ proof_form.proof.id_for_label }}">Unggah bukti transfer (JPG, PNG, atau PDF; maks. 5 MB) *</label>
+                <label class="proof-upload-box" id="proof-dropzone" for="{{ proof_form.proof.id_for_label }}">
+                  <input
+                    type="file"
+                    name="{{ proof_form.proof.html_name }}"
+                    id="{{ proof_form.proof.id_for_label }}"
+                    accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                    class="proof-upload-input"
+                    aria-describedby="proof-upload-help proof-client-error"
+                    required
+                  >
+                  <span class="proof-upload-icon" aria-hidden="true">
+                    <i data-lucide="upload-cloud" style="width:24px;height:24px;"></i>
+                  </span>
+                  <span class="proof-upload-title">Seret &amp; lepas bukti transfer ke sini</span>
+                  <span class="proof-upload-hint" id="proof-upload-help">Format JPG, PNG, atau PDF &bull; Ukuran maksimal 5 MB</span>
+                  <span class="proof-upload-cta">
+                    <i data-lucide="file-up" style="width:15px;height:15px;"></i>
+                    Pilih File Bukti
+                  </span>
+                </label>
+
+                <div class="proof-preview-card" id="proof-preview-card" hidden>
+                  <div class="proof-preview-left">
+                    <img class="proof-preview-thumb" id="proof-preview-img" src="" alt="Pratinjau bukti transfer" hidden>
+                    <span class="proof-preview-pdf" id="proof-preview-pdf" hidden>PDF</span>
+                    <div class="proof-preview-meta">
+                      <span class="proof-preview-name" id="proof-preview-name"></span>
+                      <span class="proof-preview-size" id="proof-preview-size"></span>
+                    </div>
+                  </div>
+                  <button type="button" class="button button--outline" id="proof-clear-btn" style="padding:8px 14px;min-height:38px;font-size:0.8rem;">
+                    Ganti File
+                  </button>
+                </div>
+
+                <p id="proof-client-error" role="alert" aria-live="polite" style="color:#b91c1c;font-size:0.85rem;margin:6px 0 0;" hidden></p>
                 {{ proof_form.proof.errors }}
               </div>
-              <button type="submit" class="button button--accent">Kirim bukti transfer</button>
+              <button type="submit" class="button button--accent" id="proof-submit-btn" style="min-height:48px;">
+                <i data-lucide="send" style="width:16px;height:16px;"></i>
+                <span>Kirim bukti transfer</span>
+              </button>
             </form>
+            <script>
+              (function () {
+                const form = document.getElementById('proof-upload-form');
+                const input = document.getElementById('{{ proof_form.proof.id_for_label }}');
+                const dropzone = document.getElementById('proof-dropzone');
+                const previewCard = document.getElementById('proof-preview-card');
+                const previewImg = document.getElementById('proof-preview-img');
+                const previewPdf = document.getElementById('proof-preview-pdf');
+                const previewName = document.getElementById('proof-preview-name');
+                const previewSize = document.getElementById('proof-preview-size');
+                const clearBtn = document.getElementById('proof-clear-btn');
+                const clientErr = document.getElementById('proof-client-error');
+                const submitBtn = document.getElementById('proof-submit-btn');
+                if (!form || !input || !dropzone) return;
+
+                const MAX_BYTES = 5 * 1024 * 1024;
+                const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'pdf'];
+                let objectUrl = null;
+
+                function formatBytes(bytes) {
+                  if (bytes < 1024) return bytes + ' B';
+                  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+                }
+
+                function clearPreview(resetInput) {
+                  if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                  }
+                  if (resetInput) input.value = '';
+                  previewCard.hidden = true;
+                  previewImg.hidden = true;
+                  previewImg.removeAttribute('src');
+                  previewPdf.hidden = true;
+                  dropzone.hidden = false;
+                }
+
+                function showError(msg) {
+                  clientErr.textContent = msg;
+                  clientErr.hidden = !msg;
+                  input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+                }
+
+                function handleFile(file) {
+                  showError('');
+                  if (!file) {
+                    clearPreview(false);
+                    return;
+                  }
+                  const ext = (file.name.split('.').pop() || '').toLowerCase();
+                  if (!ALLOWED_EXT.includes(ext)) {
+                    clearPreview(true);
+                    showError('Format file harus JPG, PNG, atau PDF.');
+                    return;
+                  }
+                  if (file.size > MAX_BYTES) {
+                    clearPreview(true);
+                    showError('Ukuran file melebihi batas maksimal 5 MB.');
+                    return;
+                  }
+
+                  previewName.textContent = file.name;
+                  previewSize.textContent = formatBytes(file.size);
+                  if (ext === 'pdf') {
+                    previewImg.hidden = true;
+                    previewPdf.hidden = false;
+                  } else {
+                    if (objectUrl) URL.revokeObjectURL(objectUrl);
+                    objectUrl = URL.createObjectURL(file);
+                    previewImg.src = objectUrl;
+                    previewImg.hidden = false;
+                    previewPdf.hidden = true;
+                  }
+                  dropzone.hidden = true;
+                  previewCard.hidden = false;
+                }
+
+                input.addEventListener('change', function () {
+                  handleFile(this.files && this.files[0]);
+                });
+
+                clearBtn.addEventListener('click', function () {
+                  clearPreview(true);
+                  showError('');
+                  input.focus();
+                });
+
+                ['dragenter', 'dragover'].forEach(function (evtName) {
+                  dropzone.addEventListener(evtName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('is-dragover');
+                  });
+                });
+
+                ['dragleave', 'drop'].forEach(function (evtName) {
+                  dropzone.addEventListener(evtName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('is-dragover');
+                  });
+                });
+
+                dropzone.addEventListener('drop', function (e) {
+                  const files = e.dataTransfer && e.dataTransfer.files;
+                  if (!files || !files.length) return;
+                  const dt = new DataTransfer();
+                  dt.items.add(files[0]);
+                  input.files = dt.files;
+                  handleFile(files[0]);
+                });
+
+                form.addEventListener('submit', function (e) {
+                  if (!input.files || !input.files.length) {
+                    e.preventDefault();
+                    showError('Silakan pilih file bukti transfer terlebih dahulu.');
+                    input.focus();
+                    return;
+                  }
+                  submitBtn.disabled = true;
+                  const labelSpan = submitBtn.querySelector('span');
+                  if (labelSpan) labelSpan.textContent = 'Mengirim bukti...';
+                });
+              })();
+            </script>
           {% endif %}
         {% else %}
           <p>Informasi rekening belum diatur. Hubungi admin toko untuk instruksi transfer.</p>
