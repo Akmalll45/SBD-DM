@@ -21,7 +21,11 @@
           <h3 style="margin:4px 0;">Rp {{ payment.amount|floatformat:0|intcomma }}</h3>
           <p style="margin:0;color:var(--color-muted);">Metode: {{ payment.get_method_display }}</p>
         </div>
-        <span class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</span>
+        {% if order.status == 'pending' and payment.status == 'awaiting_verification' %}
+          <span class="status-badge status-badge--pending" style="background:#dbeafe;color:#1d4ed8;">{{ payment.get_status_display }}</span>
+        {% else %}
+          <span class="status-badge status-badge--{{ order.status }}">{{ order.get_status_display }}</span>
+        {% endif %}
       </div>
       <p style="margin:14px 0 0;"><strong>Status pembayaran:</strong> {{ payment.get_status_display }}</p>
     </div>
