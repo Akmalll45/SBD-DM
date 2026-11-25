@@ -167,14 +167,34 @@
       <small style="color:var(--admin-text-muted);">{{ event.created_at|date:"d M Y, H:i" }}</small>
     </div>
   {% endfor %}
+  {% if order.payment.status != 'paid' %}
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--admin-border); display:flex; flex-direction:column; gap:8px;">
+      {% if order.payment.method == 'midtrans' %}
+        <form method="post" action="{% url 'dashboard:review_payment' order.payment.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="sync_midtrans">
+          <button type="submit" class="btn-admin btn-admin--primary btn-admin--sm" style="width:100%; justify-content:center;">
+            <i data-lucide="refresh-cw" style="width:14px;"></i> Sinkronkan Status Midtrans
+          </button>
+        </form>
+      {% endif %}
+
+      <form method="post" action="{% url 'dashboard:review_payment' order.payment.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="btn-admin btn-admin--accent btn-admin--sm" style="width:100%; justify-content:center;" onclick="return confirm('Tandai pembayaran pesanan ini sebagai LUNAS? Total pendapatan toko akan langsung diperbarui.');">
+          <i data-lucide="check-circle" style="width:14px;"></i> Tandai Lunas (Verifikasi Manual)
+        </button>
+      </form>
+    </div>
+  {% endif %}
   {% if order.payment.status == 'awaiting_verification' %}
-    <form method="post" action="{% url 'dashboard:review_payment' order.payment.id %}" style="margin-top:16px;">
+    <form method="post" action="{% url 'dashboard:review_payment' order.payment.id %}" style="margin-top:12px;">
       {% csrf_token %}
       <label for="rejection-note-{{ order.payment.id }}">Catatan jika bukti ditolak</label>
-      <textarea id="rejection-note-{{ order.payment.id }}" name="rejection_note" class="form-textarea" rows="2"></textarea>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="btn-admin btn-admin--primary btn-admin--sm" name="action" value="approve" type="submit">Verifikasi lunas</button>
-        <button class="btn-admin btn-admin--outline btn-admin--sm" name="action" value="reject" type="submit">Tolak bukti</button>
+      <textarea id="rejection-note-{{ order.payment.id }}" name="rejection_note" class="form-textarea" rows="2" placeholder="Alasan penolakan bukti..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-admin btn-admin--outline btn-admin--sm" name="action" value="reject" type="submit" style="color:var(--admin-danger); width:100%; justify-content:center;">Tolak bukti transfer</button>
       </div>
     </form>
   {% endif %}

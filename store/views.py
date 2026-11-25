@@ -41,6 +41,7 @@ from .payments import (
     new_gateway_order_id,
     record_payment_status,
     release_order_stock,
+    sync_midtrans_payment,
     verify_midtrans_signature,
 )
 
@@ -1066,6 +1067,36 @@ def order_success(request, order_id):
         pk=order_id,
         user=request.user,
     )
+    # Auto-sync with Midtrans in case customer just completed payment
+    payment = getattr(order, 'payment', None)
+    if payment and payment.method == Payment.Method.MIDTRANS and payment.status != Payment.Status.PAID:
+        sync_midtrans_payment(payment)
+        order.refresh_from_db()
+        order.payment.refresh_from_db()
+
     return render(request, 'store/order_success.html', {
         'order': order,
+    })
+
+
+@login_required(login_url='store:login')
+@require_POST
+def sync_order_payment(request, order_id):
+    order = get_object_or_404(
+        Order.objects.select_related('payment'),
+        pk=order_id,
+        user=request.user,
+    )
+    payment = getattr(order, 'payment', None)
+    if not payment:
+        return JsonResponse({'success': False, 'message': 'Data pembayaran tidak ditemukan.'}, status=404)
+
+    is_paid = sync_midtrans_payment(payment)
+    return JsonResponse({
+        'success': True,
+        'is_paid': is_paid,
+        'payment_status': payment.status,
+        'payment_status_display': payment.get_status_display(),
+        'order_status': order.status,
+        'order_status_display': order.get_status_display(),
     })

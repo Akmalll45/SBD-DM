@@ -90,10 +90,10 @@
             <td>
               <!-- Sablon Presence Indicator -->
               {% for item in order.items.all %}
-                {% if item.has_sablon %}
+                {% if item.has_sablon and item.custom_name or item.has_sablon and item.custom_number != None and item.custom_number != '' %}
                   <div class="badge-sablon-admin" style="margin-bottom: 4px;">
                     <i data-lucide="sparkles" style="width: 11px;"></i>
-                    {{ item.custom_name }} #{{ item.custom_number }}
+                    {{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}
                   </div>
                 {% endif %}
               {% empty %}

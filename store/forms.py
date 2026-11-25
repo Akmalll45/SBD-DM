@@ -112,48 +112,17 @@ class OrderStatusForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        choices = [
-            choice for choice in Order.Status.choices
-            if choice[0] != Order.Status.PAID
-        ]
-        if self.instance.status == Order.Status.PAID:
-            choices.append((Order.Status.PAID, Order.Status.PAID.label))
-        self.fields['status'].choices = choices
+        self.fields['status'].choices = Order.Status.choices
 
     def clean_status(self):
         status = self.cleaned_data['status']
         payment = getattr(self.instance, 'payment', None)
         if self.instance.status == Order.Status.CANCELLED and status != Order.Status.CANCELLED:
             raise forms.ValidationError('Pesanan yang sudah dibatalkan tidak dapat diaktifkan kembali.')
-        blocks_cancellation = payment and (
-            payment.status in (
-                Payment.Status.PAID,
-                Payment.Status.AWAITING_VERIFICATION,
-            )
-            or (
-                payment.method == Payment.Method.MIDTRANS
-                and payment.status == Payment.Status.PENDING
-                and bool(payment.snap_token)
-            )
-        )
-        if status == Order.Status.CANCELLED and blocks_cancellation:
-            raise forms.ValidationError(
-                'Pesanan tidak dapat dibatalkan saat pembayaran sudah lunas, '
-                'menunggu verifikasi, atau memiliki tagihan Midtrans aktif.'
-            )
         if (
             status == Order.Status.PENDING
             and payment
             and payment.status == Payment.Status.PAID
         ):
             raise forms.ValidationError('Pesanan lunas tidak dapat dikembalikan ke status menunggu pembayaran.')
-        if status in (
-            Order.Status.PROCESSING,
-            Order.Status.SHIPPED,
-            Order.Status.COMPLETED,
-        ):
-            if not payment or payment.status != Payment.Status.PAID:
-                raise forms.ValidationError(
-                    'Pesanan hanya dapat diproses setelah pembayaran berstatus lunas.'
-                )
         return status

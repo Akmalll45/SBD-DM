@@ -71,8 +71,22 @@
           <script>
             document.getElementById('open-snap').addEventListener('click', function () {
               window.snap.pay('{{ snap_token|escapejs }}', {
-                onSuccess: function () { window.location.href = "{% url 'store:order_success' order.id %}"; },
-                onPending: function () { window.location.href = "{% url 'store:order_success' order.id %}"; },
+                onSuccess: function () {
+                  fetch("{% url 'store:sync_order_payment' order.id %}", {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                  }).finally(function () {
+                    window.location.href = "{% url 'store:order_success' order.id %}";
+                  });
+                },
+                onPending: function () {
+                  fetch("{% url 'store:sync_order_payment' order.id %}", {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                  }).finally(function () {
+                    window.location.href = "{% url 'store:order_success' order.id %}";
+                  });
+                },
                 onError: function () { window.location.reload(); }
               });
             });

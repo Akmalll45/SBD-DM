@@ -28,7 +28,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
 from store.models import Order, Payment
-from store.payments import release_order_stock
+from store.payments import release_order_stock, sync_midtrans_payment
 
 from .forms import AddressForm, IndonesianPasswordChangeForm, ProfileForm, VerificationCodeForm
 from .models import Address, LoginActivity, OrderStatusHistory, Profile
@@ -98,6 +98,15 @@ class AccountPasswordChangeView(PasswordChangeView):
 
 @login_required
 def order_list(request):
+    # Auto-sync any pending Midtrans payments for this user so status is always fresh
+    pending_user_midtrans = list(Payment.objects.filter(
+        order__user=request.user,
+        method=Payment.Method.MIDTRANS,
+        status=Payment.Status.PENDING,
+    ).select_related('order'))
+    for p in pending_user_midtrans:
+        sync_midtrans_payment(p)
+
     orders = (
         Order.objects.filter(user=request.user)
         .select_related('payment')
@@ -129,8 +138,13 @@ def order_detail(request, order_id):
         ),
         pk=order_id,
     )
-    items = list(order.items.all())
     payment = getattr(order, 'payment', None)
+    if payment and payment.method == Payment.Method.MIDTRANS and payment.status != Payment.Status.PAID:
+        sync_midtrans_payment(payment)
+        order.refresh_from_db()
+        payment = getattr(order, 'payment', None)
+
+    items = list(order.items.all())
     print_total = sum((item.sablon_total for item in items), Decimal('0'))
     items_subtotal = sum((item.line_total for item in items), Decimal('0')) - print_total
     history = list(order.status_history.all())

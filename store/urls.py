@@ -22,6 +22,7 @@ urlpatterns = [
     path('checkout/konfirmasi/', views.checkout_confirm, name='checkout_confirm'),
     path('pesanan/<int:order_id>/bayar/', views.payment_detail, name='payment_detail'),
     path('order/<int:order_id>/success/', views.order_success, name='order_success'),
+    path('order/<int:order_id>/sync-payment/', views.sync_order_payment, name='sync_order_payment'),
     path('pesanan/<int:order_id>/invoice.pdf', views.invoice_pdf, name='invoice_pdf'),
     path('pesanan/<int:order_id>/bukti-transfer/', views.payment_proof_file, name='payment_proof_file'),
     path('pembayaran/midtrans/notifikasi/', views.midtrans_notification, name='midtrans_notification'),

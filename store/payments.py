@@ -134,6 +134,82 @@ def verify_midtrans_signature(payload, server_key=None):
     return hmac.compare_digest(digest, signature)
 
 
+def sync_midtrans_payment(payment):
+    """
+    Directly query Midtrans Status API for the current transaction status.
+    If paid (settlement or capture+accept), automatically update database via mark_payment_paid().
+    Returns True if payment is paid, False otherwise.
+    """
+    if not payment:
+        return False
+    if payment.status == Payment.Status.PAID:
+        return True
+    if payment.method != Payment.Method.MIDTRANS:
+        return False
+    if not settings.MIDTRANS_SERVER_KEY or not payment.gateway_order_id:
+        return False
+
+    base_url = (
+        'https://api.sandbox.midtrans.com'
+        if getattr(settings, 'MIDTRANS_SANDBOX', True)
+        else 'https://api.midtrans.com'
+    )
+    url = f"{base_url}/v2/{payment.gateway_order_id}/status"
+
+    encoded_credentials = base64.b64encode(
+        f'{settings.MIDTRANS_SERVER_KEY}:'.encode('utf-8')
+    ).decode('ascii')
+
+    req = Request(
+        url,
+        headers={
+            'Authorization': f'Basic {encoded_credentials}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        method='GET',
+    )
+    try:
+        with urlopen(req, timeout=10) as response:
+            result = json.loads(response.read().decode('utf-8'))
+    except Exception as exc:
+        logger.warning(
+            'Could not query Midtrans status for payment #%s (%s): %s',
+            payment.pk, payment.gateway_order_id, exc
+        )
+        return False
+
+    transaction_status = result.get('transaction_status')
+    fraud_status = result.get('fraud_status')
+    transaction_id = result.get('transaction_id') or None
+
+    if transaction_status == 'settlement' or (
+        transaction_status == 'capture' and fraud_status == 'accept'
+    ):
+        with transaction.atomic():
+            locked_payment = Payment.objects.select_for_update().get(pk=payment.pk)
+            if transaction_id:
+                locked_payment.gateway_transaction_id = transaction_id
+                locked_payment.save(update_fields=['gateway_transaction_id', 'updated_at'])
+            mark_payment_paid(locked_payment)
+            payment.refresh_from_db()
+        return True
+    elif transaction_status in ('expire', 'cancel', 'deny'):
+        with transaction.atomic():
+            locked_payment = Payment.objects.select_for_update().get(pk=payment.pk)
+            locked_payment.status = (
+                Payment.Status.EXPIRED if transaction_status == 'expire'
+                else Payment.Status.CANCELLED if transaction_status == 'cancel'
+                else Payment.Status.FAILED
+            )
+            if transaction_id:
+                locked_payment.gateway_transaction_id = transaction_id
+            locked_payment.save(update_fields=['status', 'gateway_transaction_id', 'updated_at'])
+            payment.refresh_from_db()
+        return False
+    return False
+
+
 def mark_payment_paid(payment, verified_by=None):
     if payment.status == Payment.Status.PAID:
         return False

@@ -10,7 +10,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from store.models import Category, Order, OrderItem, Payment, Product, ProductVariant
-from store.payments import mark_payment_paid, record_payment_status, release_order_stock
+from store.payments import (
+    mark_payment_paid,
+    record_payment_status,
+    release_order_stock,
+    sync_midtrans_payment,
+)
 from .forms import ArticleForm, OrderStatusForm, ProductForm, SiteSettingForm
 from .models import Article, SiteSetting
 
@@ -25,6 +30,14 @@ def admin_dashboard(request):
     Main Analytics Overview: Total Revenue, Total Orders, Active Customers,
     Low Stock Alerts, Sablon Production metrics, and Recent Orders.
     """
+    # Auto-sync recent pending Midtrans payments so revenue & stats are always fresh
+    pending_midtrans = list(Payment.objects.filter(
+        method=Payment.Method.MIDTRANS,
+        status=Payment.Status.PENDING,
+    ).select_related('order')[:15])
+    for p in pending_midtrans:
+        sync_midtrans_payment(p)
+
     # 1. Revenue: Completed / non-cancelled orders
     total_revenue = (
         Payment.objects.filter(status=Payment.Status.PAID)
@@ -112,6 +125,14 @@ def order_list(request):
     """
     Order list with status filtering (pending, paid, shipped, cancelled) and search.
     """
+    # Auto-sync recent pending Midtrans orders
+    pending_midtrans = list(Payment.objects.filter(
+        method=Payment.Method.MIDTRANS,
+        status=Payment.Status.PENDING,
+    ).select_related('order')[:15])
+    for p in pending_midtrans:
+        sync_midtrans_payment(p)
+
     orders = (
         Order.objects.select_related('user', 'payment')
         .prefetch_related('items')
@@ -163,6 +184,13 @@ def order_detail(request, order_id):
         id=order_id,
     )
 
+    # Auto-sync with Midtrans if payment is pending
+    payment = getattr(order, 'payment', None)
+    if payment and payment.method == Payment.Method.MIDTRANS and payment.status != Payment.Status.PAID:
+        sync_midtrans_payment(payment)
+        order.refresh_from_db()
+        payment = getattr(order, 'payment', None)
+
     if request.method == 'POST':
         with transaction.atomic():
             locked_payment = (
@@ -179,8 +207,18 @@ def order_detail(request, order_id):
             form = OrderStatusForm(request.POST, instance=locked_order)
             if form.is_valid():
                 updated_order = form.save()
-                if updated_order.status == Order.Status.CANCELLED:
+                # If marked as processing, shipped, completed, or paid, auto-mark payment paid
+                if updated_order.status in (
+                    Order.Status.PROCESSING,
+                    Order.Status.SHIPPED,
+                    Order.Status.COMPLETED,
+                    Order.Status.PAID,
+                ):
+                    if locked_payment and locked_payment.status != Payment.Status.PAID:
+                        mark_payment_paid(locked_payment, verified_by=request.user)
+                elif updated_order.status == Order.Status.CANCELLED:
                     release_order_stock(updated_order)
+
                 messages.success(
                     request,
                     f'Status pesanan #{order.id} berhasil diubah menjadi '
@@ -220,26 +258,32 @@ def payment_list(request):
 @staff_member_required(login_url='store:login')
 def review_payment(request, payment_id):
     action = request.POST.get('action')
+    payment = get_object_or_404(Payment.objects.select_related('order'), pk=payment_id)
+    order = payment.order
+
+    if action == 'sync_midtrans':
+        if payment.method == Payment.Method.MIDTRANS:
+            is_paid = sync_midtrans_payment(payment)
+            if is_paid:
+                messages.success(request, f'Pembayaran pesanan #{order.pk} berhasil disinkronkan: LUNAS di Midtrans.')
+            else:
+                messages.info(request, f'Status Midtrans untuk pesanan #{order.pk}: {payment.get_status_display()}.')
+        else:
+            messages.warning(request, 'Pesanan ini tidak menggunakan metode Midtrans.')
+        return redirect('dashboard:order_detail', order_id=order.pk)
+
     with transaction.atomic():
-        payment = get_object_or_404(
-            Payment.objects.select_for_update(),
-            pk=payment_id,
-        )
-        order = Order.objects.select_for_update().get(pk=payment.order_id)
-        if (
-            payment.method != Payment.Method.MANUAL_TRANSFER
-            or payment.status != Payment.Status.AWAITING_VERIFICATION
-        ):
-            messages.error(request, 'Pembayaran ini tidak sedang menunggu verifikasi.')
-        elif action == 'approve':
-            mark_payment_paid(payment, verified_by=request.user)
-            messages.success(request, f'Pembayaran pesanan #{order.pk} berhasil diverifikasi.')
+        locked_payment = Payment.objects.select_for_update().get(pk=payment_id)
+        locked_order = Order.objects.select_for_update().get(pk=locked_payment.order_id)
+        if action == 'approve':
+            mark_payment_paid(locked_payment, verified_by=request.user)
+            messages.success(request, f'Pembayaran pesanan #{locked_order.pk} berhasil diverifikasi LUNAS oleh admin. Pendapatan telah dicatat.')
         elif action == 'reject':
-            payment.status = Payment.Status.FAILED
-            payment.verified_by = request.user
-            payment.verified_at = timezone.now()
-            payment.rejection_note = request.POST.get('rejection_note', '').strip()[:2000]
-            payment.save(update_fields=[
+            locked_payment.status = Payment.Status.FAILED
+            locked_payment.verified_by = request.user
+            locked_payment.verified_at = timezone.now()
+            locked_payment.rejection_note = request.POST.get('rejection_note', '').strip()[:2000]
+            locked_payment.save(update_fields=[
                 'status',
                 'verified_by',
                 'verified_at',
@@ -247,14 +291,14 @@ def review_payment(request, payment_id):
                 'updated_at',
             ])
             record_payment_status(
-                payment,
-                payment.rejection_note or 'Bukti transfer ditolak oleh admin.',
+                locked_payment,
+                locked_payment.rejection_note or 'Bukti transfer ditolak oleh admin.',
                 actor=request.user,
             )
-            messages.info(request, f'Bukti transfer pesanan #{order.pk} ditolak.')
+            messages.info(request, f'Bukti transfer pesanan #{locked_order.pk} ditolak.')
         else:
             messages.error(request, 'Aksi verifikasi tidak valid.')
-    return redirect('dashboard:order_detail', order_id=payment.order_id)
+    return redirect('dashboard:order_detail', order_id=order.pk)
 
 
 # -----------------------------------------------------------------------------
