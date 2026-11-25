@@ -377,6 +377,23 @@ def product_edit(request, product_id):
 
 @require_POST
 @staff_member_required(login_url='store:login')
+def product_toggle_active(request, product_id):
+    """
+    Toggle is_active status of a product (Aktif ↔ Nonaktif).
+    Produk nonaktif tidak tampil di toko tapi riwayat pesanan tetap terjaga.
+    """
+    product = get_object_or_404(Product, id=product_id)
+    product.is_active = not product.is_active
+    product.save(update_fields=['is_active'])
+    if product.is_active:
+        messages.success(request, f'Produk "{product.name}" berhasil diaktifkan dan kini tampil di toko.')
+    else:
+        messages.warning(request, f'Produk "{product.name}" dinonaktifkan dan tidak tampil di toko.')
+    return redirect('dashboard:product_list')
+
+
+@require_POST
+@staff_member_required(login_url='store:login')
 def product_delete(request, product_id):
     """
     Delete a product from the database.

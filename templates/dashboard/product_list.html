@@ -133,6 +133,16 @@
                 <a href="{% url 'dashboard:product_edit' product.id %}" class="btn-admin btn-admin--outline btn-admin--sm" title="Edit">
                   <i data-lucide="edit-3" style="width: 13px;"></i> Edit
                 </a>
+                <form action="{% url 'dashboard:product_toggle_active' product.id %}" method="post" style="display:inline;" title="{% if product.is_active %}Nonaktifkan produk{% else %}Aktifkan produk{% endif %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-admin btn-admin--sm" style="{% if product.is_active %}background:var(--admin-warning);color:#fff;border-color:var(--admin-warning);{% else %}background:var(--admin-success);color:#fff;border-color:var(--admin-success);{% endif %}">
+                    {% if product.is_active %}
+                      <i data-lucide="eye-off" style="width:13px;"></i>
+                    {% else %}
+                      <i data-lucide="eye" style="width:13px;"></i>
+                    {% endif %}
+                  </button>
+                </form>
                 <form action="{% url 'dashboard:product_delete' product.id %}" method="post" onsubmit="return confirm('Hapus produk ini?\n\nJika produk sudah pernah dipesan, produk akan DINONAKTIFKAN (tidak tampil di toko) agar riwayat pesanan tetap terjaga.');" style="display:inline;">
                   {% csrf_token %}
                   <button type="submit" class="btn-admin btn-admin--danger btn-admin--sm" title="Hapus / Nonaktifkan">
