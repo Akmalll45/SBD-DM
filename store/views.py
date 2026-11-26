@@ -375,11 +375,13 @@ def cart_detail(request):
     Full-page cart view summarizing items, Sablon specifications, and subtotal.
     """
     cart, _ = Cart.objects.get_or_create(user=request.user)
-    items = cart.items.select_related('product', 'variant')
+    items = list(cart.items.select_related('product', 'variant').order_by('pk'))
+    all_free_shipping = bool(items) and all(item.product.free_shipping for item in items)
 
     return render(request, 'store/cart.html', {
         'cart': cart,
         'items': items,
+        'all_free_shipping': all_free_shipping,
     })
 
 
@@ -861,27 +863,38 @@ def payment_detail(request, order_id):
                         'Bukti transfer tidak dapat dikirim atau instruksi rekening belum tersedia.',
                     )
                 else:
-                    locked_payment.proof = proof_form.cleaned_data['proof']
-                    locked_payment.proof_submitted_at = timezone.now()
-                    locked_payment.status = Payment.Status.AWAITING_VERIFICATION
-                    locked_payment.rejection_note = ''
-                    locked_payment.verified_by = None
-                    locked_payment.verified_at = None
-                    locked_payment.save(update_fields=[
-                        'proof',
-                        'proof_submitted_at',
-                        'status',
-                        'rejection_note',
-                        'verified_by',
-                        'verified_at',
-                        'updated_at',
-                    ])
-                    record_payment_status(
-                        locked_payment,
-                        'Bukti transfer dikirim dan menunggu verifikasi admin.',
-                    )
-                    messages.success(request, 'Bukti transfer terkirim dan menunggu verifikasi admin.')
-                    return redirect('store:payment_detail', order_id=order.pk)
+                    try:
+                        locked_payment.proof = proof_form.cleaned_data['proof']
+                        locked_payment.proof_submitted_at = timezone.now()
+                        locked_payment.status = Payment.Status.AWAITING_VERIFICATION
+                        locked_payment.rejection_note = ''
+                        locked_payment.verified_by = None
+                        locked_payment.verified_at = None
+                        locked_payment.save(update_fields=[
+                            'proof',
+                            'proof_submitted_at',
+                            'status',
+                            'rejection_note',
+                            'verified_by',
+                            'verified_at',
+                            'updated_at',
+                        ])
+                        record_payment_status(
+                            locked_payment,
+                            'Bukti transfer dikirim dan menunggu verifikasi admin.',
+                        )
+                        messages.success(request, 'Bukti transfer terkirim dan menunggu verifikasi admin.')
+                        return redirect('store:payment_detail', order_id=order.pk)
+                    except Exception as exc:
+                        logger.error(
+                            'Failed to save payment proof for order #%s: %s',
+                            locked_order.pk, exc, exc_info=True,
+                        )
+                        transaction.set_rollback(True)
+                        messages.error(
+                            request,
+                            'Gagal mengunggah bukti transfer. Silakan coba lagi atau hubungi admin.',
+                        )
         else:
             messages.error(request, 'Periksa kembali file bukti transfer yang dipilih.')
 

@@ -14,8 +14,11 @@ class PrivatePaymentProofStorage(Storage):
 
     def _backend(self):
         if getattr(settings, 'CLOUDINARY_URL', ''):
-            from cloudinary_storage.storage import RawMediaCloudinaryStorage
-            return RawMediaCloudinaryStorage()
+            # MediaCloudinaryStorage mendukung semua tipe file (image/pdf/dll)
+            # RawMediaCloudinaryStorage hanya untuk non-image; gambar JPG/PNG
+            # akan ditolak Cloudinary jika dikirim sebagai resource_type=raw.
+            from cloudinary_storage.storage import MediaCloudinaryStorage
+            return MediaCloudinaryStorage()
         return FileSystemStorage(
             location=os.fspath(settings.PAYMENT_PROOF_ROOT),
             base_url=None,

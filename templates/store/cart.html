@@ -103,7 +103,11 @@
             </div>
             <div class="summary-line">
               <span>Biaya Pengiriman</span>
-              <span class="badge-tag badge-tag--stock" style="font-size: 0.72rem;">GRATIS</span>
+              {% if all_free_shipping %}
+                <span class="badge-tag badge-tag--stock" style="font-size: 0.72rem;">GRATIS</span>
+              {% else %}
+                <span style="font-size:0.82rem; color:var(--color-muted);">Dihitung saat checkout</span>
+              {% endif %}
             </div>
             <div class="summary-line">
               <span>Jaminan Kualitas</span>
