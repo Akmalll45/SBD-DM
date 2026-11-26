@@ -3640,6 +3640,11 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
+.proof-preview-thumb[hidden],
+.proof-preview-pdf[hidden] {
+  display: none;
+}
+
 .proof-preview-meta {
   min-width: 0;
 }
