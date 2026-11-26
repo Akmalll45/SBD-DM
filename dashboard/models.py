@@ -10,7 +10,7 @@ class SiteSetting(models.Model):
     contact_phone = models.CharField(max_length=30, default='+62 812-3456-7890')
     contact_address = models.TextField(blank=True, default='Jl. Sudirman No. 45, Jakarta Selatan')
     logo = models.ImageField(upload_to='site/', blank=True, null=True)
-    sablon_fee = models.DecimalField(max_digits=10, decimal_places=0, default=Decimal('75000'))
+    sablon_fee = models.DecimalField(max_digits=10, decimal_places=0, default=Decimal('20000'))
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

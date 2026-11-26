@@ -125,7 +125,7 @@
           action="{% url 'store:add_to_cart' product.id %}"
           method="post"
           data-base-price="{{ product.base_price|default:0 }}"
-          data-sablon-fee="{{ sablon_fee|default:75000 }}"
+          data-sablon-fee="{{ sablon_fee|default:20000 }}"
         >
           {% csrf_token %}
           <input type="hidden" name="variant_id" id="selected-variant-id" value="{% if default_variant %}{{ default_variant.id }}{% endif %}" {% if not product.is_equipment %}required{% endif %}>

@@ -245,7 +245,7 @@ PAYMENT_PROOF_ROOT = config(
 )
 
 # Flat fee added when a cart line includes custom name and number printing.
-SABLON_FEE = 75000
+SABLON_FEE = 20000
 
 # Payment credentials are intentionally sandbox-only; no production endpoint is used.
 MIDTRANS_SANDBOX = True
