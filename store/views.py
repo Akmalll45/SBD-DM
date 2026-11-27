@@ -676,7 +676,7 @@ def guest_checkout(request, slug):
 
     product = get_object_or_404(Product, slug=slug, is_active=True)
     shipping_options = settings.CHECKOUT_SHIPPING_OPTIONS
-    site = SiteSetting.get_solo()
+    site = SiteSetting.load()
 
     sablon_fee_setting = Decimal(str(settings.SABLON_FEE))
     initial_data = {}
