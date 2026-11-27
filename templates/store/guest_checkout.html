@@ -5,18 +5,18 @@
 
 {% block content %}
 <section class="checkout-section">
-  <div class="container" style="max-width: 960px;">
+  <div class="container">
     <div class="section-heading" style="margin-bottom: 24px;">
       <div>
         <span class="eyebrow">PEMBELIAN TAMU</span>
         <h2>Beli Langsung</h2>
         <p style="color: var(--color-muted); font-size: 0.9rem; margin-top: 4px;">
           Tidak perlu daftar akun untuk pembelian pertamamu.
-          <a href="{% url 'store:login' %}" style="color: var(--color-accent);">Sudah punya akun? Login</a>
+          <a href="{% url 'store:login' %}" style="color: var(--color-accent); font-weight: 600;">Sudah punya akun? Login</a>
         </p>
       </div>
       <a class="section-heading__link" href="{% url 'store:product_detail' product.slug %}">
-        <i data-lucide="arrow-left" style="width: 16px;"></i> Kembali
+        <i data-lucide="arrow-left" style="width: 16px;"></i> Kembali ke produk
       </a>
     </div>
 
@@ -27,9 +27,9 @@
           {% csrf_token %}
           <input type="hidden" name="variant_id" value="{{ form.variant_id.value|default:'' }}">
 
-          <!-- Data diri -->
+          <!-- Data Pemesan & Pengiriman -->
           <div class="checkout-card">
-            <h3><i data-lucide="user" style="color: var(--color-accent); width: 20px;"></i> Data Pemesan</h3>
+            <h3><i data-lucide="map-pin" style="color: var(--color-accent); width: 22px;"></i> Data Pemesan &amp; Pengiriman</h3>
             {% if form.non_field_errors %}
               <div class="checkout-error">{{ form.non_field_errors }}</div>
             {% endif %}
@@ -41,43 +41,55 @@
                 {% if form.full_name.errors %}<p class="form-error">{{ form.full_name.errors.0 }}</p>{% endif %}
               </div>
               <div class="form-group">
-                <label for="{{ form.email.id_for_label }}">Email (untuk konfirmasi) *</label>
-                {{ form.email }}
-                {% if form.email.errors %}<p class="form-error">{{ form.email.errors.0 }}</p>{% endif %}
+                <label for="{{ form.phone.id_for_label }}">Nomor telepon / WhatsApp *</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}<p class="form-error">{{ form.phone.errors.0 }}</p>{% endif %}
               </div>
             </div>
-            <div class="form-group">
-              <label for="{{ form.phone.id_for_label }}">Nomor telepon / WhatsApp *</label>
-              {{ form.phone }}
-              {% if form.phone.errors %}<p class="form-error">{{ form.phone.errors.0 }}</p>{% endif %}
-            </div>
-          </div>
 
-          <!-- Alamat -->
-          <div class="checkout-card" style="margin-top: 16px;">
-            <h3><i data-lucide="map-pin" style="color: var(--color-accent); width: 20px;"></i> Alamat Pengiriman</h3>
-            <div class="form-group-grid">
-              <div class="form-group">
-                <label for="{{ form.city.id_for_label }}">Kota / Kabupaten *</label>
-                {{ form.city }}
-                {% if form.city.errors %}<p class="form-error">{{ form.city.errors.0 }}</p>{% endif %}
-              </div>
-              <div class="form-group">
-                <label for="{{ form.courier.id_for_label }}">Layanan Pengiriman *</label>
-                {{ form.courier }}
-                {% if form.courier.errors %}<p class="form-error">{{ form.courier.errors.0 }}</p>{% endif %}
-              </div>
+            <div class="form-group">
+              <label for="{{ form.email.id_for_label }}">Email (untuk konfirmasi pesanan) *</label>
+              {{ form.email }}
+              {% if form.email.errors %}<p class="form-error">{{ form.email.errors.0 }}</p>{% endif %}
             </div>
+
+            <div class="form-group">
+              <label for="{{ form.city.id_for_label }}">Kota / Kabupaten *</label>
+              {{ form.city }}
+              {% if form.city.errors %}<p class="form-error">{{ form.city.errors.0 }}</p>{% endif %}
+            </div>
+
             <div class="form-group">
               <label for="{{ form.address.id_for_label }}">Alamat Lengkap *</label>
               {{ form.address }}
               {% if form.address.errors %}<p class="form-error">{{ form.address.errors.0 }}</p>{% endif %}
             </div>
+
+            {% if product.free_shipping %}
+              <div class="form-group checkout-courier-field">
+                <label>Layanan pengiriman</label>
+                <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; background:var(--color-soft); border:2px solid #22c55e; border-radius:var(--radius-md);">
+                  <i data-lucide="truck" style="color:#22c55e; width:20px; flex-shrink:0;"></i>
+                  <span style="font-weight:700; color:#16a34a;">GRATIS ONGKIR</span>
+                </div>
+                <input type="hidden" name="courier" value="{{ shipping_options.0.0|default:'regular' }}">
+              </div>
+            {% else %}
+              <div class="form-group checkout-courier-field">
+                <label for="{{ form.courier.id_for_label }}">Layanan pengiriman *</label>
+                <div class="checkout-courier-select">
+                  <span class="checkout-courier-select__icon" aria-hidden="true"><i data-lucide="truck"></i></span>
+                  {{ form.courier }}
+                  <span class="checkout-courier-select__chevron" aria-hidden="true"><i data-lucide="chevron-down"></i></span>
+                </div>
+                {% if form.courier.errors %}<p class="form-error">{{ form.courier.errors.0 }}</p>{% endif %}
+              </div>
+            {% endif %}
           </div>
 
-          <!-- Jumlah -->
-          <div class="checkout-card" style="margin-top: 16px;">
-            <h3><i data-lucide="package" style="color: var(--color-accent); width: 20px;"></i> Jumlah Pemesanan</h3>
+          <!-- Ukuran & Jumlah -->
+          <div class="checkout-card" style="margin-top: 20px;">
+            <h3><i data-lucide="package" style="color: var(--color-accent); width: 22px;"></i> Ukuran &amp; Jumlah</h3>
             {% if product.variants.exists %}
               <div class="form-group">
                 <label>Ukuran *</label>
@@ -87,6 +99,7 @@
                       <button type="button"
                         class="size-btn {% if forloop.first %}size-btn--active{% endif %}"
                         data-variant="{{ v.pk }}"
+                        data-size="{{ v.size }}"
                         data-stock="{{ v.stock }}"
                         onclick="selectVariant(this, {{ v.pk }}, {{ v.stock }})"
                       >{{ v.size }}</button>
@@ -95,27 +108,11 @@
                     {% endif %}
                   {% endfor %}
                 </div>
-                <script>
-                  document.addEventListener('DOMContentLoaded', function () {
-                    const preselectedId = document.querySelector('[name="variant_id"]').value;
-                    const preselectedBtn = preselectedId
-                      ? document.querySelector(`.size-btn[data-variant="${preselectedId}"]:not(.size-btn--disabled)`)
-                      : null;
-                    const target = preselectedBtn || document.querySelector('.size-btn:not(.size-btn--disabled)');
-                    if (target) selectVariant(target, target.dataset.variant, target.dataset.stock);
-                  });
-                  function selectVariant(el, variantId, stock) {
-                    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('size-btn--active'));
-                    el.classList.add('size-btn--active');
-                    document.querySelector('[name="variant_id"]').value = variantId;
-                    document.getElementById('id_quantity').max = stock;
-                    document.getElementById('stock-info').textContent = 'Stok: ' + stock;
-                  }
-                </script>
                 <small id="stock-info" style="color: var(--color-muted); margin-top: 6px; display: block;"></small>
               </div>
             {% endif %}
-            <div class="form-group" style="max-width: 160px;">
+
+            <div class="form-group" style="max-width: 180px; margin-bottom: 0;">
               <label for="{{ form.quantity.id_for_label }}">Jumlah *</label>
               {{ form.quantity }}
               {% if form.quantity.errors %}<p class="form-error">{{ form.quantity.errors.0 }}</p>{% endif %}
@@ -124,14 +121,14 @@
 
           {% if product.allow_custom_print and product.is_jersey %}
           <!-- Custom Sablon Nama & Nomor -->
-          <div class="checkout-card" style="margin-top: 16px;">
+          <div class="checkout-card" style="margin-top: 20px;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
               <div>
                 <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                   <i data-lucide="sparkles" style="color: var(--color-accent); width: 20px;"></i>
                   Custom Sablon Nama &amp; Nomor
                 </h3>
-                <p style="font-size: 0.82rem; color: var(--color-muted); margin: 4px 0 0;">
+                <p style="font-size: 0.84rem; color: var(--color-muted); margin: 4px 0 0;">
                   Cetak nama &amp; nomor punggung resmi (+Rp {{ sablon_fee|floatformat:0|intcomma }} / pcs)
                 </p>
               </div>
@@ -141,20 +138,20 @@
               </label>
             </div>
 
-            <div id="guest-sablon-fields" {% if not form.has_sablon.value %}hidden{% endif %} style="margin-top: 16px;">
+            <div id="guest-sablon-fields" {% if not form.has_sablon.value %}hidden{% endif %} style="margin-top: 18px;">
               <div class="form-group-grid">
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                   <label for="{{ form.custom_name.id_for_label }}">Nama Punggung</label>
                   {{ form.custom_name }}
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                   <label for="{{ form.custom_number.id_for_label }}">Nomor Punggung (0–99)</label>
                   {{ form.custom_number }}
                 </div>
               </div>
 
               <!-- Upload Daftar Nama Sablon (Hanya aktif jika jumlah > 1) -->
-              <div id="guest-bulk-sablon-upload" hidden style="margin-top: 12px; padding: 14px; border: 1.5px dashed #0284c7; border-radius: 10px; background: #f0f9ff;">
+              <div id="guest-bulk-sablon-upload" hidden style="margin-top: 16px; padding: 14px; border: 1.5px dashed #0284c7; border-radius: 10px; background: #f0f9ff;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
                   <strong style="font-size: 0.86rem; color: #0369a1; display: inline-flex; align-items: center; gap: 6px;">
                     <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
@@ -183,7 +180,7 @@
             <i data-lucide="shopping-bag" style="width: 18px;"></i>
             Pesan Sekarang
           </button>
-          <p style="font-size: 0.78rem; color: var(--color-muted); text-align: center; margin-top: 10px;">
+          <p style="font-size: 0.8rem; color: var(--color-muted); text-align: center; margin-top: 10px;">
             <i data-lucide="shield-check" style="width: 13px; vertical-align: middle;"></i>
             Konfirmasi pesanan akan dikirim ke email kamu.
             Untuk transaksi berikutnya, kamu perlu <a href="{% url 'store:login' %}" style="color: var(--color-accent);">login</a>.
@@ -191,64 +188,130 @@
         </form>
       </div>
 
-      <!-- RINGKASAN PRODUK -->
-      <aside class="checkout-summary">
-        <div class="summary-box">
-          <h3>Produk Dipesan</h3>
-          {% if product.display_image %}
-            <img src="{{ product.display_image.url }}" alt="{{ product.name }}"
-              style="width: 100%; border-radius: 8px; margin-bottom: 12px; object-fit: cover; max-height: 200px;">
-          {% endif %}
-          <p style="font-weight: 600; margin: 0;">{{ product.name }}</p>
-          {% if product.discount_price %}
-            <p style="color: var(--color-accent); font-size: 1.1rem; font-weight: 700; margin: 6px 0 0;">
-              Rp {{ product.discount_price|floatformat:0|intcomma }}
-            </p>
-            <p style="color: var(--color-muted); font-size: 0.85rem; text-decoration: line-through; margin: 2px 0 0;">
-              Rp {{ product.base_price|floatformat:0|intcomma }}
-            </p>
-          {% else %}
-            <p style="color: var(--color-accent); font-size: 1.1rem; font-weight: 700; margin: 6px 0 0;">
-              Rp {{ product.base_price|floatformat:0|intcomma }}
-            </p>
-          {% endif %}
-          <div class="summary-rows" style="margin-top: 16px;">
-            <div class="summary-line" id="guest-sablon-summary-row" hidden>
-              <span>Biaya Sablon</span>
-              <strong id="guest-sablon-summary-val">Rp 0</strong>
+      <!-- RINGKASAN BELANJA (seragam dengan checkout.html) -->
+      <aside class="summary-box" aria-label="Ringkasan belanja">
+        <h3>Ringkasan Belanja</h3>
+        <div class="checkout-item-compact">
+          <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+            <div style="width:52px; height:52px; background:var(--color-soft); border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; flex-shrink:0;">
+              {% if product.display_image %}
+                <img src="{{ product.display_image.url }}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover;">
+              {% else %}
+                <img src="{% static 'images/categories/default.svg' %}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover;">
+              {% endif %}
             </div>
-            <div class="summary-line">
-              <span>Subtotal Produk (<span id="guest-summary-qty">1</span> pcs)</span>
-              <strong id="guest-summary-subtotal">Rp {{ product.discount_price|default:product.base_price|floatformat:0|intcomma }}</strong>
-            </div>
-            {% if product.free_shipping %}
-              <div class="summary-line">
-                <span>Ongkos Kirim</span>
-                <span class="badge-tag badge-tag--stock" style="font-size: 0.72rem;">GRATIS</span>
+            <div style="min-width:0;">
+              <strong style="display:block; font-size:0.88rem;">{{ product.name }}</strong>
+              <span style="font-size:0.78rem; color:var(--color-muted);">
+                <span id="guest-summary-size"></span>Qty <span id="guest-summary-qty-inline">1</span>
+              </span>
+              <div id="guest-summary-sablon-tag" hidden style="font-size:0.74rem; color:#0284c7; font-weight:700; margin-top:2px;">
+                Custom Sablon aktif
               </div>
+            </div>
+          </div>
+          <strong style="white-space: nowrap;" id="guest-summary-unit-price">
+            Rp {{ product.discount_price|default:product.base_price|floatformat:0|intcomma }}
+          </strong>
+        </div>
+
+        <div class="summary-rows">
+          <div class="summary-line" id="guest-sablon-summary-row" hidden>
+            <span>Biaya Sablon</span>
+            <strong id="guest-sablon-summary-val" style="white-space: nowrap;">Rp 0</strong>
+          </div>
+          <div class="summary-line">
+            <span>Subtotal produk (<span id="guest-summary-qty">1</span> pcs)</span>
+            <strong id="guest-summary-subtotal" style="white-space: nowrap;">
+              Rp {{ product.discount_price|default:product.base_price|floatformat:0|intcomma }}
+            </strong>
+          </div>
+          <div class="summary-line">
+            <span>Ongkos kirim</span>
+            {% if product.free_shipping %}
+              <strong style="color:#16a34a; white-space: nowrap;">GRATIS</strong>
             {% else %}
-              {% for code, label, rate in shipping_options %}
-                <div class="summary-line">
-                  <span>{{ label }}</span>
-                  <strong>Rp {{ rate|floatformat:0|intcomma }}</strong>
-                </div>
-              {% endfor %}
+              <strong id="guest-summary-shipping" style="white-space: nowrap;">Pilih layanan</strong>
             {% endif %}
           </div>
-          <p style="font-size: 0.78rem; color: var(--color-muted); margin-top: 12px;">
-            Total akhir dihitung sesuai pilihan pengiriman.
-          </p>
+          <div class="summary-total-line">
+            <span>Total</span>
+            <strong id="guest-summary-total" style="white-space: nowrap;">
+              Rp {{ product.discount_price|default:product.base_price|floatformat:0|intcomma }}
+            </strong>
+          </div>
         </div>
       </aside>
     </div>
   </div>
 </section>
 
+<style>
+.checkout-form-area .form-input,
+.checkout-form-area .form-textarea,
+.checkout-form-area .form-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+.size-btn {
+  padding: 8px 18px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all .15s;
+}
+.size-btn--active {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: white;
+}
+.size-btn--disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.form-error {
+  color: #b91c1c;
+  font-size: 0.82rem;
+  margin: 4px 0 0;
+}
+</style>
+
 <script>
+function selectVariant(el, variantId, stock) {
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('size-btn--active'));
+  el.classList.add('size-btn--active');
+  document.querySelector('[name="variant_id"]').value = variantId;
+  const qtyEl = document.getElementById('id_quantity');
+  if (qtyEl) qtyEl.max = stock;
+  const stockInfo = document.getElementById('stock-info');
+  if (stockInfo) stockInfo.textContent = 'Stok tersedia: ' + stock;
+  const sizeSummary = document.getElementById('guest-summary-size');
+  if (sizeSummary && el.dataset.size) {
+    sizeSummary.textContent = 'Ukuran ' + el.dataset.size + ' · ';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  const preselectedId = document.querySelector('[name="variant_id"]')?.value;
+  const preselectedBtn = preselectedId
+    ? document.querySelector(`.size-btn[data-variant="${preselectedId}"]:not(.size-btn--disabled)`)
+    : null;
+  const target = preselectedBtn || document.querySelector('.size-btn:not(.size-btn--disabled)');
+  if (target) selectVariant(target, target.dataset.variant, target.dataset.stock);
+
   const BASE_PRICE = {{ product.discount_price|default:product.base_price|floatformat:0 }};
   const SABLON_FEE = {{ sablon_fee|default:0|floatformat:0 }};
+  const IS_FREE_SHIPPING = {% if product.free_shipping %}true{% else %}false{% endif %};
+  const shippingRates = {
+    {% for code, label, amount in shipping_options %}"{{ code }}": {{ amount }},
+    {% endfor %}
+  };
+
   const qtyInput = document.getElementById('id_quantity');
+  const courierSelect = document.getElementById('id_courier');
   const sablonCheckbox = document.getElementById('id_has_sablon');
   const sablonFields = document.getElementById('guest-sablon-fields');
   const bulkUpload = document.getElementById('guest-bulk-sablon-upload');
@@ -256,8 +319,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const rosterError = document.getElementById('guest-sablon-roster-error');
   const sablonRow = document.getElementById('guest-sablon-summary-row');
   const sablonVal = document.getElementById('guest-sablon-summary-val');
+  const sablonTag = document.getElementById('guest-summary-sablon-tag');
   const summaryQty = document.getElementById('guest-summary-qty');
+  const summaryQtyInline = document.getElementById('guest-summary-qty-inline');
+  const summaryUnitPrice = document.getElementById('guest-summary-unit-price');
   const summarySubtotal = document.getElementById('guest-summary-subtotal');
+  const summaryShipping = document.getElementById('guest-summary-shipping');
+  const summaryTotal = document.getElementById('guest-summary-total');
 
   function formatIDR(n) {
     return 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -266,8 +334,11 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateGuestSablonUI() {
     const qty = Math.max(1, parseInt(qtyInput ? qtyInput.value : 1) || 1);
     const hasSablon = Boolean(sablonCheckbox && sablonCheckbox.checked);
+    const unitPrice = hasSablon ? (BASE_PRICE + SABLON_FEE) : BASE_PRICE;
+    const subtotal = unitPrice * qty;
 
     if (sablonFields) sablonFields.hidden = !hasSablon;
+    if (sablonTag) sablonTag.hidden = !hasSablon;
     if (bulkUpload) {
       const showBulk = hasSablon && qty > 1;
       bulkUpload.hidden = !showBulk;
@@ -285,9 +356,19 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
     if (summaryQty) summaryQty.textContent = qty;
-    if (summarySubtotal) {
-      const unitPrice = hasSablon ? (BASE_PRICE + SABLON_FEE) : BASE_PRICE;
-      summarySubtotal.textContent = formatIDR(unitPrice * qty);
+    if (summaryQtyInline) summaryQtyInline.textContent = qty;
+    if (summaryUnitPrice) summaryUnitPrice.textContent = formatIDR(unitPrice);
+    if (summarySubtotal) summarySubtotal.textContent = formatIDR(subtotal);
+
+    let shippingCost = 0;
+    if (!IS_FREE_SHIPPING && courierSelect) {
+      shippingCost = shippingRates[courierSelect.value] || 0;
+      if (summaryShipping) {
+        summaryShipping.textContent = shippingCost === 0 ? 'GRATIS' : formatIDR(shippingCost);
+      }
+    }
+    if (summaryTotal) {
+      summaryTotal.textContent = formatIDR(subtotal + shippingCost);
     }
   }
 
@@ -297,6 +378,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   if (sablonCheckbox) {
     sablonCheckbox.addEventListener('change', updateGuestSablonUI);
+  }
+  if (courierSelect) {
+    courierSelect.addEventListener('change', updateGuestSablonUI);
   }
   if (rosterInput) {
     const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
@@ -326,31 +410,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateGuestSablonUI();
 });
 </script>
-
-<style>
-.size-btn {
-  padding: 8px 18px;
-  border: 2px solid var(--color-border);
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all .15s;
-}
-.size-btn--active {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: white;
-}
-.size-btn--disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
-.form-error {
-  color: #b91c1c;
-  font-size: 0.82rem;
-  margin: 4px 0 0;
-}
-</style>
 {% endblock %}
