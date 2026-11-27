@@ -268,8 +268,8 @@ BANK_TRANSFER_ACCOUNT_NUMBER = config('BANK_TRANSFER_ACCOUNT_NUMBER', default=''
 SHIPPING_RATE_REGULAR = config('SHIPPING_RATE_REGULAR', default=18000, cast=int)
 SHIPPING_RATE_EXPRESS = config('SHIPPING_RATE_EXPRESS', default=30000, cast=int)
 CHECKOUT_SHIPPING_OPTIONS = (
-    ('regular', 'Reguler (2–4 hari kerja)', SHIPPING_RATE_REGULAR),
-    ('express', 'Express (1–2 hari kerja)', SHIPPING_RATE_EXPRESS),
+    ('regular', 'Reguler (5–6 hari kerja)', SHIPPING_RATE_REGULAR),
+    ('express', 'Express (3–4 hari kerja)', SHIPPING_RATE_EXPRESS),
 )
 if SHIPPING_RATE_REGULAR < 0 or SHIPPING_RATE_EXPRESS < 0:
     raise ImproperlyConfigured('Checkout shipping rates cannot be negative.')

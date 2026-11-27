@@ -115,7 +115,7 @@ class CheckoutFlowTests(TestCase):
             response,
             reverse('store:payment_detail', kwargs={'order_id': order.pk}),
         )
-        self.assertEqual(order.courier, 'Reguler (2–4 hari kerja)')
+        self.assertEqual(order.courier, 'Reguler (5–6 hari kerja)')
         self.assertEqual(order.shipping_cost, Decimal('18000'))
         self.assertEqual(order.total, Decimal('258000'))
         self.assertEqual(payment.amount, order.total)
