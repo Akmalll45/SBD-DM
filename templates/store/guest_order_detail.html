@@ -65,6 +65,17 @@
             <strong>{{ item.product_name }}</strong>
             {% if item.size %}<span style="color: var(--color-muted); font-size: 0.85rem;"> — Ukuran {{ item.size }}</span>{% endif %}
             <br><small style="color: var(--color-muted);">Rp {{ item.unit_price|floatformat:0|intcomma }} × {{ item.quantity }}</small>
+            {% if item.has_sablon %}
+              <div style="font-size: 0.8rem; color: #0369a1; margin-top: 4px;">
+                Custom Sablon: <strong>{{ item.custom_name|default:"-" }}{% if item.custom_number != None %} #{{ item.custom_number }}{% endif %}</strong>
+                {% if item.quantity > 1 %}
+                  <span>(Rp {{ item.sablon_fee|floatformat:0|intcomma }} &times; {{ item.quantity }} = Rp {{ item.sablon_total|floatformat:0|intcomma }})</span>
+                {% endif %}
+                {% if item.sablon_roster %}
+                  <span style="display: block; color: #0284c7;">&#128206; File daftar nama terlampir</span>
+                {% endif %}
+              </div>
+            {% endif %}
           </div>
           <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
         </div>

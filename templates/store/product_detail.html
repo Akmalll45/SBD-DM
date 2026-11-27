@@ -826,6 +826,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (qtyInput && qtyInput.value) {
         params.set('qty', qtyInput.value);
       }
+      if (sablonCheckbox && sablonCheckbox.checked) {
+        params.set('has_sablon', '1');
+        if (nameInput && nameInput.value.trim()) {
+          params.set('custom_name', nameInput.value.trim());
+        }
+        if (numberInput && numberInput.value.trim()) {
+          params.set('custom_number', numberInput.value.trim());
+        }
+      }
       const guestUrl = "{% url 'store:guest_checkout' product.slug %}" + (params.toString() ? '?' + params.toString() : '');
       window.location.href = guestUrl;
     {% else %}

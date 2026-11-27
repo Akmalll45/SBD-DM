@@ -23,7 +23,7 @@
     <div class="checkout-grid">
       <!-- FORM -->
       <div class="checkout-form-area">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
           <input type="hidden" name="variant_id" value="{{ form.variant_id.value|default:'' }}">
 
@@ -122,6 +122,63 @@
             </div>
           </div>
 
+          {% if product.allow_custom_print and product.is_jersey %}
+          <!-- Custom Sablon Nama & Nomor -->
+          <div class="checkout-card" style="margin-top: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <div>
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="sparkles" style="color: var(--color-accent); width: 20px;"></i>
+                  Custom Sablon Nama &amp; Nomor
+                </h3>
+                <p style="font-size: 0.82rem; color: var(--color-muted); margin: 4px 0 0;">
+                  Cetak nama &amp; nomor punggung resmi (+Rp {{ sablon_fee|floatformat:0|intcomma }} / pcs)
+                </p>
+              </div>
+              <label class="switch" aria-label="Aktifkan custom sablon">
+                <input type="checkbox" id="id_has_sablon" name="has_sablon" {% if form.has_sablon.value %}checked{% endif %}>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div id="guest-sablon-fields" {% if not form.has_sablon.value %}hidden{% endif %} style="margin-top: 16px;">
+              <div class="form-group-grid">
+                <div class="form-group">
+                  <label for="{{ form.custom_name.id_for_label }}">Nama Punggung</label>
+                  {{ form.custom_name }}
+                </div>
+                <div class="form-group">
+                  <label for="{{ form.custom_number.id_for_label }}">Nomor Punggung (0–99)</label>
+                  {{ form.custom_number }}
+                </div>
+              </div>
+
+              <!-- Upload Daftar Nama Sablon (Hanya aktif jika jumlah > 1) -->
+              <div id="guest-bulk-sablon-upload" hidden style="margin-top: 12px; padding: 14px; border: 1.5px dashed #0284c7; border-radius: 10px; background: #f0f9ff;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                  <strong style="font-size: 0.86rem; color: #0369a1; display: inline-flex; align-items: center; gap: 6px;">
+                    <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
+                    Daftar Nama &amp; Nomor Sablon (Pesanan &gt; 1 Jersey)
+                  </strong>
+                  <span style="font-size: 0.72rem; color: #0369a1; font-weight: 600;">Opsional jika nama berbeda-beda</span>
+                </div>
+                <p style="font-size: 0.78rem; color: #334155; margin: 6px 0 10px;">
+                  Unggah file daftar nama &amp; nomor punggung untuk setiap jersey dalam format <strong>Gambar (JPG, PNG), Word (.doc/.docx), atau Excel (.xls/.xlsx)</strong> (maks. 5 MB).
+                </p>
+                <input
+                  type="file"
+                  id="guest-sablon-roster-input"
+                  name="sablon_roster"
+                  accept=".jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  style="font-size: 0.82rem; max-width: 100%;"
+                >
+                {% if form.sablon_roster.errors %}<p class="form-error">{{ form.sablon_roster.errors.0 }}</p>{% endif %}
+                <p id="guest-sablon-roster-error" role="alert" hidden class="form-error"></p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <button type="submit" class="button button--accent" style="width: 100%; min-height: 52px; margin-top: 20px; font-size: 1rem;">
             <i data-lucide="shopping-bag" style="width: 18px;"></i>
             Pesan Sekarang
@@ -156,6 +213,14 @@
             </p>
           {% endif %}
           <div class="summary-rows" style="margin-top: 16px;">
+            <div class="summary-line" id="guest-sablon-summary-row" hidden>
+              <span>Biaya Sablon</span>
+              <strong id="guest-sablon-summary-val">Rp 0</strong>
+            </div>
+            <div class="summary-line">
+              <span>Subtotal Produk (<span id="guest-summary-qty">1</span> pcs)</span>
+              <strong id="guest-summary-subtotal">Rp {{ product.discount_price|default:product.base_price|floatformat:0|intcomma }}</strong>
+            </div>
             {% if product.free_shipping %}
               <div class="summary-line">
                 <span>Ongkos Kirim</span>
@@ -178,6 +243,89 @@
     </div>
   </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const BASE_PRICE = {{ product.discount_price|default:product.base_price|floatformat:0 }};
+  const SABLON_FEE = {{ sablon_fee|default:0|floatformat:0 }};
+  const qtyInput = document.getElementById('id_quantity');
+  const sablonCheckbox = document.getElementById('id_has_sablon');
+  const sablonFields = document.getElementById('guest-sablon-fields');
+  const bulkUpload = document.getElementById('guest-bulk-sablon-upload');
+  const rosterInput = document.getElementById('guest-sablon-roster-input');
+  const rosterError = document.getElementById('guest-sablon-roster-error');
+  const sablonRow = document.getElementById('guest-sablon-summary-row');
+  const sablonVal = document.getElementById('guest-sablon-summary-val');
+  const summaryQty = document.getElementById('guest-summary-qty');
+  const summarySubtotal = document.getElementById('guest-summary-subtotal');
+
+  function formatIDR(n) {
+    return 'Rp ' + Number(n).toLocaleString('id-ID');
+  }
+
+  function updateGuestSablonUI() {
+    const qty = Math.max(1, parseInt(qtyInput ? qtyInput.value : 1) || 1);
+    const hasSablon = Boolean(sablonCheckbox && sablonCheckbox.checked);
+
+    if (sablonFields) sablonFields.hidden = !hasSablon;
+    if (bulkUpload) {
+      const showBulk = hasSablon && qty > 1;
+      bulkUpload.hidden = !showBulk;
+      if (!showBulk && rosterInput && rosterInput.value) {
+        rosterInput.value = '';
+        if (rosterError) rosterError.hidden = true;
+      }
+    }
+    if (sablonRow && sablonVal) {
+      sablonRow.hidden = !hasSablon;
+      if (hasSablon) {
+        sablonVal.textContent = qty > 1
+          ? `${formatIDR(SABLON_FEE)} × ${qty} = ${formatIDR(SABLON_FEE * qty)}`
+          : formatIDR(SABLON_FEE);
+      }
+    }
+    if (summaryQty) summaryQty.textContent = qty;
+    if (summarySubtotal) {
+      const unitPrice = hasSablon ? (BASE_PRICE + SABLON_FEE) : BASE_PRICE;
+      summarySubtotal.textContent = formatIDR(unitPrice * qty);
+    }
+  }
+
+  if (qtyInput) {
+    qtyInput.addEventListener('input', updateGuestSablonUI);
+    qtyInput.addEventListener('change', updateGuestSablonUI);
+  }
+  if (sablonCheckbox) {
+    sablonCheckbox.addEventListener('change', updateGuestSablonUI);
+  }
+  if (rosterInput) {
+    const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+    rosterInput.addEventListener('change', function () {
+      if (rosterError) rosterError.hidden = true;
+      const file = rosterInput.files && rosterInput.files[0];
+      if (!file) return;
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!ALLOWED_EXT.includes(ext)) {
+        rosterInput.value = '';
+        if (rosterError) {
+          rosterError.textContent = 'Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).';
+          rosterError.hidden = false;
+        }
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        rosterInput.value = '';
+        if (rosterError) {
+          rosterError.textContent = 'Ukuran file maksimal 5 MB.';
+          rosterError.hidden = false;
+        }
+      }
+    });
+  }
+
+  updateGuestSablonUI();
+});
+</script>
 
 <style>
 .size-btn {

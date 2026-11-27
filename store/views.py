@@ -393,6 +393,15 @@ def cart_detail(request):
     })
 
 
+def _validate_uploaded_sablon_roster(uploaded_file):
+    """Validasi ekstensi dan ukuran file daftar nama sablon (JPG/PNG/DOC/DOCX/XLS/XLSX)."""
+    ext = uploaded_file.name.rpartition('.')[2].lower() if '.' in uploaded_file.name else ''
+    allowed_ext = {'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'}
+    if ext not in allowed_ext:
+        raise ValidationError('Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).')
+    validate_sablon_roster(uploaded_file)
+
+
 @require_POST
 def add_to_cart(request, product_id):
     """
@@ -439,12 +448,8 @@ def add_to_cart(request, product_id):
         # File daftar nama sablon hanya berlaku jika has_sablon aktif dan quantity > 1
         if has_sablon and quantity > 1 and 'sablon_roster' in request.FILES:
             uploaded_roster = request.FILES['sablon_roster']
-            ext = uploaded_roster.name.rpartition('.')[2].lower() if '.' in uploaded_roster.name else ''
-            allowed_ext = {'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'}
             try:
-                if ext not in allowed_ext:
-                    raise ValidationError('Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).')
-                validate_sablon_roster(uploaded_roster)
+                _validate_uploaded_sablon_roster(uploaded_roster)
             except ValidationError as exc:
                 err_msg = exc.messages[0] if getattr(exc, 'messages', None) else str(exc)
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -673,6 +678,7 @@ def guest_checkout(request, slug):
     shipping_options = settings.CHECKOUT_SHIPPING_OPTIONS
     site = SiteSetting.get_solo()
 
+    sablon_fee_setting = Decimal(str(settings.SABLON_FEE))
     initial_data = {}
     if request.method == 'GET':
         req_variant = request.GET.get('variant')
@@ -681,12 +687,27 @@ def guest_checkout(request, slug):
             initial_data['variant_id'] = int(req_variant)
         if req_qty and req_qty.isdigit():
             initial_data['quantity'] = max(1, min(99, int(req_qty)))
+        if product.allow_custom_print and product.is_jersey and request.GET.get('has_sablon') in ('1', 'true', 'on', 'yes'):
+            initial_data['has_sablon'] = True
+            initial_data['custom_name'] = request.GET.get('custom_name', '').strip().upper()[:16]
+            req_num = request.GET.get('custom_number', '').strip()
+            if req_num.isdigit():
+                initial_data['custom_number'] = max(0, min(99, int(req_num)))
 
     form = GuestCheckoutForm(
         request.POST or None,
+        request.FILES or None,
         initial=initial_data if request.method == 'GET' else None,
         shipping_options=shipping_options,
     )
+
+    guest_ctx = {
+        'form': form,
+        'product': product,
+        'site': site,
+        'shipping_options': shipping_options,
+        'sablon_fee': settings.SABLON_FEE,
+    }
 
     if request.method == 'POST' and form.is_valid():
         d = form.cleaned_data
@@ -710,15 +731,31 @@ def guest_checkout(request, slug):
             variant = get_object_or_404(ProductVariant, pk=variant_id, product=product)
             if variant.stock < quantity:
                 form.add_error('quantity', f'Stok ukuran {variant.size} hanya tersisa {variant.stock}.')
-                return render(request, 'store/guest_checkout.html', {
-                    'form': form, 'product': product, 'site': site, 'shipping_options': shipping_options,
-                })
+                return render(request, 'store/guest_checkout.html', guest_ctx)
         else:
             if product.stock < quantity:
                 form.add_error('quantity', f'Stok produk hanya tersisa {product.stock}.')
-                return render(request, 'store/guest_checkout.html', {
-                    'form': form, 'product': product, 'site': site, 'shipping_options': shipping_options,
-                })
+                return render(request, 'store/guest_checkout.html', guest_ctx)
+
+        # Sablon & upload daftar nama (hanya jika jersey mendukung custom print)
+        has_sablon = False
+        custom_name = ''
+        custom_number = None
+        sablon_fee_per_unit = Decimal('0')
+        uploaded_roster = None
+        if product.allow_custom_print and product.is_jersey and d.get('has_sablon'):
+            has_sablon = True
+            custom_name = (d.get('custom_name') or '').strip().upper()[:16]
+            custom_number = d.get('custom_number')
+            sablon_fee_per_unit = sablon_fee_setting
+            if quantity > 1 and 'sablon_roster' in request.FILES:
+                uploaded_roster = request.FILES['sablon_roster']
+                try:
+                    _validate_uploaded_sablon_roster(uploaded_roster)
+                except ValidationError as exc:
+                    err_msg = exc.messages[0] if getattr(exc, 'messages', None) else str(exc)
+                    form.add_error('sablon_roster', err_msg)
+                    return render(request, 'store/guest_checkout.html', guest_ctx)
 
         # Hitung biaya (jika produk free_shipping, ongkir = 0)
         courier_code = d['courier']
@@ -728,16 +765,15 @@ def guest_checkout(request, slug):
             shipping_rate = Decimal(
                 next((rate for code, _, rate in shipping_options if code == courier_code), 0)
             )
-        unit_price = product.discount_price or product.base_price
+        base_unit_price = product.discount_price or product.base_price
+        unit_price = base_unit_price + sablon_fee_per_unit
         subtotal = unit_price * quantity
         total = subtotal + shipping_rate
 
         payment_methods = _available_payment_methods()
         if not payment_methods:
             messages.error(request, 'Belum ada metode pembayaran yang tersedia. Hubungi admin toko.')
-            return render(request, 'store/guest_checkout.html', {
-                'form': form, 'product': product, 'site': site,
-            })
+            return render(request, 'store/guest_checkout.html', guest_ctx)
 
         with transaction.atomic():
             # Kurangi stok
@@ -773,8 +809,11 @@ def guest_checkout(request, slug):
                 size=variant.size if variant else '',
                 unit_price=unit_price,
                 quantity=quantity,
-                sablon_fee=0,
-                has_sablon=False,
+                sablon_fee=sablon_fee_per_unit,
+                has_sablon=has_sablon,
+                custom_name=custom_name,
+                custom_number=custom_number,
+                sablon_roster=uploaded_roster,
             )
 
             # Buat payment — gunakan metode pertama yang tersedia
@@ -810,12 +849,7 @@ def guest_checkout(request, slug):
         )
         return response
 
-    return render(request, 'store/guest_checkout.html', {
-        'form': form,
-        'product': product,
-        'site': site,
-        'shipping_options': shipping_options,
-    })
+    return render(request, 'store/guest_checkout.html', guest_ctx)
 
 
 def guest_order_detail(request, token):

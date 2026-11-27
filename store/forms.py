@@ -122,6 +122,23 @@ class GuestCheckoutForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-input', 'min': '1', 'max': '99'}),
     )
     variant_id = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    has_sablon = forms.BooleanField(required=False, label='Custom Sablon Nama & Nomor')
+    custom_name = forms.CharField(
+        max_length=16, required=False, label='Nama Punggung',
+        widget=forms.TextInput(attrs={
+            'class': 'form-input', 'maxlength': '16',
+            'placeholder': 'CONTOH: RONALDO',
+            'style': 'text-transform: uppercase;',
+        }),
+    )
+    custom_number = forms.IntegerField(
+        min_value=0, max_value=99, required=False, label='Nomor Punggung',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-input', 'min': '0', 'max': '99',
+            'placeholder': 'CONTOH: 7',
+        }),
+    )
+    sablon_roster = forms.FileField(required=False, label='Daftar Nama & Nomor Sablon')
 
     def __init__(self, *args, **kwargs):
         shipping_options = kwargs.pop('shipping_options', [])
