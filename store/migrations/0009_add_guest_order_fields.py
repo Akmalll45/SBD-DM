@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='guest_token',
-            field=models.CharField(blank=True, default='', max_length=64, null=True, unique=True),
+            field=models.CharField(blank=True, default=None, max_length=64, null=True, unique=True),
         ),
         migrations.AddField(
             model_name='order',

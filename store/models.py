@@ -292,7 +292,7 @@ class Order(models.Model):
     )
     # Field untuk pesanan tamu (tanpa akun)
     guest_email = models.EmailField(blank=True, default='')
-    guest_token = models.CharField(max_length=64, blank=True, default='', unique=True, null=True)
+    guest_token = models.CharField(max_length=64, blank=True, default=None, unique=True, null=True)
     is_guest_order = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
