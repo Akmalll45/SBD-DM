@@ -852,18 +852,98 @@ def guest_checkout(request, slug):
     return render(request, 'store/guest_checkout.html', guest_ctx)
 
 
+def _handle_proof_submission(request, order, allow_legacy=False):
+    """Proses unggah bukti transfer manual; kembalikan (proof_form, submitted_ok)."""
+    proof_form = PaymentProofForm(request.POST, request.FILES)
+    if not proof_form.is_valid():
+        messages.error(request, 'Periksa kembali file bukti transfer yang dipilih.')
+        return proof_form, False
+
+    allowed_methods = (
+        (Payment.Method.MANUAL_TRANSFER, Payment.Method.LEGACY)
+        if allow_legacy
+        else (Payment.Method.MANUAL_TRANSFER,)
+    )
+    with transaction.atomic():
+        locked_order = Order.objects.select_for_update().get(pk=order.pk)
+        locked_payment = Payment.objects.select_for_update().get(order=locked_order)
+        if (
+            locked_payment.method not in allowed_methods
+            or locked_payment.status not in (
+                Payment.Status.PENDING,
+                Payment.Status.FAILED,
+            )
+            or locked_order.status != Order.Status.PENDING
+            or not all((
+                settings.BANK_TRANSFER_NAME,
+                settings.BANK_TRANSFER_ACCOUNT_NAME,
+                settings.BANK_TRANSFER_ACCOUNT_NUMBER,
+            ))
+        ):
+            messages.error(
+                request,
+                'Bukti transfer tidak dapat dikirim atau instruksi rekening belum tersedia.',
+            )
+            return proof_form, False
+
+        try:
+            if locked_payment.method == Payment.Method.LEGACY:
+                locked_payment.method = Payment.Method.MANUAL_TRANSFER
+            locked_payment.proof = proof_form.cleaned_data['proof']
+            locked_payment.proof_submitted_at = timezone.now()
+            locked_payment.status = Payment.Status.AWAITING_VERIFICATION
+            locked_payment.rejection_note = ''
+            locked_payment.verified_by = None
+            locked_payment.verified_at = None
+            locked_payment.save(update_fields=[
+                'method',
+                'proof',
+                'proof_submitted_at',
+                'status',
+                'rejection_note',
+                'verified_by',
+                'verified_at',
+                'updated_at',
+            ])
+            record_payment_status(
+                locked_payment,
+                'Bukti transfer dikirim dan menunggu verifikasi admin.',
+            )
+            messages.success(request, 'Bukti transfer terkirim dan menunggu verifikasi admin.')
+            return proof_form, True
+        except Exception as exc:
+            logger.error(
+                'Failed to save payment proof for order #%s: %s',
+                locked_order.pk, exc, exc_info=True,
+            )
+            transaction.set_rollback(True)
+            messages.error(
+                request,
+                'Gagal mengunggah bukti transfer. Silakan coba lagi atau hubungi admin.',
+            )
+            return proof_form, False
+
+
+@require_http_methods(['GET', 'POST'])
 def guest_order_detail(request, token):
     """
-    Halaman tracking pesanan tamu — dapat diakses tanpa login via token unik.
+    Halaman tracking & pembayaran pesanan tamu — dapat diakses tanpa login via token unik.
     """
     order = get_object_or_404(
         Order.objects.select_related('payment').prefetch_related('items'),
         guest_token=token,
         is_guest_order=True,
     )
+    proof_form = PaymentProofForm()
+    if request.method == 'POST' and request.POST.get('action') == 'submit_proof':
+        proof_form, ok = _handle_proof_submission(request, order, allow_legacy=True)
+        if ok:
+            return redirect('store:guest_order_detail', token=token)
+
     return render(request, 'store/guest_order_detail.html', {
         'order': order,
         'payment': order.payment,
+        'proof_form': proof_form,
         'bank_transfer_name': settings.BANK_TRANSFER_NAME,
         'bank_transfer_account_name': settings.BANK_TRANSFER_ACCOUNT_NAME,
         'bank_transfer_account_number': settings.BANK_TRANSFER_ACCOUNT_NUMBER,
@@ -1182,63 +1262,9 @@ def payment_detail(request, order_id):
 
     proof_form = PaymentProofForm()
     if request.method == 'POST' and request.POST.get('action') == 'submit_proof':
-        proof_form = PaymentProofForm(request.POST, request.FILES)
-        if proof_form.is_valid():
-            with transaction.atomic():
-                locked_order = Order.objects.select_for_update().get(pk=order.pk)
-                locked_payment = Payment.objects.select_for_update().get(order=locked_order)
-                if (
-                    locked_payment.method != Payment.Method.MANUAL_TRANSFER
-                    or locked_payment.status not in (
-                        Payment.Status.PENDING,
-                        Payment.Status.FAILED,
-                    )
-                    or locked_order.status != Order.Status.PENDING
-                    or not all((
-                        settings.BANK_TRANSFER_NAME,
-                        settings.BANK_TRANSFER_ACCOUNT_NAME,
-                        settings.BANK_TRANSFER_ACCOUNT_NUMBER,
-                    ))
-                ):
-                    messages.error(
-                        request,
-                        'Bukti transfer tidak dapat dikirim atau instruksi rekening belum tersedia.',
-                    )
-                else:
-                    try:
-                        locked_payment.proof = proof_form.cleaned_data['proof']
-                        locked_payment.proof_submitted_at = timezone.now()
-                        locked_payment.status = Payment.Status.AWAITING_VERIFICATION
-                        locked_payment.rejection_note = ''
-                        locked_payment.verified_by = None
-                        locked_payment.verified_at = None
-                        locked_payment.save(update_fields=[
-                            'proof',
-                            'proof_submitted_at',
-                            'status',
-                            'rejection_note',
-                            'verified_by',
-                            'verified_at',
-                            'updated_at',
-                        ])
-                        record_payment_status(
-                            locked_payment,
-                            'Bukti transfer dikirim dan menunggu verifikasi admin.',
-                        )
-                        messages.success(request, 'Bukti transfer terkirim dan menunggu verifikasi admin.')
-                        return redirect('store:payment_detail', order_id=order.pk)
-                    except Exception as exc:
-                        logger.error(
-                            'Failed to save payment proof for order #%s: %s',
-                            locked_order.pk, exc, exc_info=True,
-                        )
-                        transaction.set_rollback(True)
-                        messages.error(
-                            request,
-                            'Gagal mengunggah bukti transfer. Silakan coba lagi atau hubungi admin.',
-                        )
-        else:
-            messages.error(request, 'Periksa kembali file bukti transfer yang dipilih.')
+        proof_form, ok = _handle_proof_submission(request, order, allow_legacy=False)
+        if ok:
+            return redirect('store:payment_detail', order_id=order.pk)
 
     gateway_error = ''
     snap_token = ''

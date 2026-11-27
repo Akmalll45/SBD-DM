@@ -90,22 +90,33 @@
       </div>
     </div>
 
-    <!-- Instruksi pembayaran -->
+    <!-- Instruksi pembayaran & upload bukti transfer -->
     {% if order.status == 'pending' and payment %}
       {% if payment.method == 'manual_transfer' or payment.method == 'legacy' %}
-        {% if bank_transfer_name and bank_transfer_account_name and bank_transfer_account_number %}
+        {% if payment.status == 'awaiting_verification' %}
+          <div class="checkout-card" style="margin-bottom: 16px; background: #eff6ff; border-color: #93c5fd;">
+            <h3 style="color: #1d4ed8;"><i data-lucide="clock" style="width: 20px;"></i> Bukti Transfer Sedang Diverifikasi</h3>
+            <p style="margin: 6px 0 0; font-size: 0.92rem;">
+              Bukti transfer kamu sudah kami terima dan masuk ke panel admin untuk diperiksa.
+              Konfirmasi pembayaran akan diproses dalam 1×24 jam kerja.
+            </p>
+          </div>
+        {% elif bank_transfer_name and bank_transfer_account_name and bank_transfer_account_number %}
           <div class="checkout-card" style="margin-bottom: 16px; background: #fffbeb;">
-            <h3><i data-lucide="landmark" style="width: 20px;"></i> Instruksi Transfer</h3>
+            <h3><i data-lucide="landmark" style="width: 20px;"></i> Instruksi &amp; Bukti Transfer</h3>
             <div class="receipt-details-grid">
               <div><small>Bank</small><strong style="display:block;">{{ bank_transfer_name }}</strong></div>
               <div><small>Nama Rekening</small><strong style="display:block;">{{ bank_transfer_account_name }}</strong></div>
               <div><small>Nomor Rekening</small><strong style="display:block; font-size: 1.1rem; letter-spacing: 1px;">{{ bank_transfer_account_number }}</strong></div>
               <div><small>Jumlah Transfer</small><strong style="display:block; color: var(--color-accent); font-size: 1.1rem;">Rp {{ payment.amount|floatformat:0|intcomma }}</strong></div>
             </div>
+            {% if payment.status == 'failed' and payment.rejection_note %}
+              <p role="alert" style="color:#b91c1c; margin-top: 12px;"><strong>Catatan verifikasi:</strong> {{ payment.rejection_note }}</p>
+            {% endif %}
             <p style="margin-top: 14px; font-size: 0.85rem; color: var(--color-muted);">
-              Transfer tepat sesuai jumlah di atas, lalu kirim bukti transfer via WhatsApp ke admin toko.
-              Konfirmasi pembayaran akan diproses dalam 1×24 jam kerja.
+              Transfer tepat sesuai jumlah di atas, lalu unggah bukti transfer di bawah ini agar langsung diperiksa oleh admin.
             </p>
+            {% include 'store/_proof_upload_form.html' %}
           </div>
         {% endif %}
       {% endif %}
