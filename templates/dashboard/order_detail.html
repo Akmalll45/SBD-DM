@@ -226,7 +226,11 @@
           <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">
             Akun Terdaftar
           </span>
-          <span>{{ order.user.username }} ({{ order.user.email|default:"Tidak ada email" }})</span>
+          {% if order.user %}
+            <span>{{ order.user.username }} ({{ order.user.email|default:"Tidak ada email" }})</span>
+          {% else %}
+            <span>Tamu ({{ order.guest_email|default:"Tidak ada email" }})</span>
+          {% endif %}
         </div>
         <div>
           <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); display: block;">

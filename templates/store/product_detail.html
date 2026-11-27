@@ -713,13 +713,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Buy Now direct redirect
   buyNowBtn.addEventListener('click', () => {
-    if (!selectedVariantInput.value) {
-      if (sizeError) sizeError.style.display = 'block';
-      sizePills[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    // Submit normally so it adds to cart and proceeds
-    form.submit();
+    {% if not user.is_authenticated %}
+      {% if product.variants.exists %}
+        if (!selectedVariantInput.value) {
+          if (sizeError) sizeError.style.display = 'block';
+          sizePills[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      {% endif %}
+      const params = new URLSearchParams();
+      if (selectedVariantInput && selectedVariantInput.value) {
+        params.set('variant', selectedVariantInput.value);
+      }
+      if (qtyInput && qtyInput.value) {
+        params.set('qty', qtyInput.value);
+      }
+      const guestUrl = "{% url 'store:guest_checkout' product.slug %}" + (params.toString() ? '?' + params.toString() : '');
+      window.location.href = guestUrl;
+    {% else %}
+      if (!selectedVariantInput.value) {
+        if (sizeError) sizeError.style.display = 'block';
+        sizePills[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      // Submit normally so it adds to cart and proceeds
+      form.submit();
+    {% endif %}
   });
 
   const ratingModal = document.getElementById('rating-modal');

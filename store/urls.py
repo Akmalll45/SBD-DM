@@ -17,6 +17,10 @@ urlpatterns = [
     path('cart/update/<int:item_id>/', views.update_cart_item, name='update_cart_item'),
     path('cart/remove/<int:item_id>/', views.remove_cart_item, name='remove_cart_item'),
 
+    # Guest Checkout (tanpa login — transaksi pertama saja)
+    path('beli/<slug:slug>/', views.guest_checkout, name='guest_checkout'),
+    path('pesanan/tamu/<str:token>/', views.guest_order_detail, name='guest_order_detail'),
+
     # Checkout & Confirmation
     path('checkout/', views.checkout, name='checkout'),
     path('checkout/konfirmasi/', views.checkout_confirm, name='checkout_confirm'),

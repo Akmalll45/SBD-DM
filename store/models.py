@@ -245,7 +245,13 @@ class Order(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='orders',
+        null=True,
+        blank=True,
     )
+    # Field untuk pesanan tamu (tanpa akun)
+    guest_email = models.EmailField(blank=True, default='')
+    guest_token = models.CharField(max_length=64, blank=True, default='', unique=True, null=True)
+    is_guest_order = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -267,7 +273,7 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Order #{self.pk} — {self.user}'
+        return f'Order #{self.pk} — {self.user or self.guest_email or "Tamu"}'
 
     @property
     def items_subtotal(self):

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Pesanan Tamu #{{ order.pk }} | Hendra Sport{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+  <div class="container" style="max-width: 720px;">
+    <div class="section-heading" style="margin-bottom: 24px;">
+      <div>
+        <span class="eyebrow">PESANAN TAMU</span>
+        <h2>Detail Pesanan #{{ order.pk }}</h2>
+      </div>
+      <a class="section-heading__link" href="{% url 'store:home' %}">Belanja Lagi</a>
+    </div>
+
+    <!-- Status banner -->
+    {% if order.status == 'pending' %}
+      <div class="checkout-card" style="background: #fffbeb; border-color: #fcd34d; margin-bottom: 20px;">
+        <h3 style="color: #92400e;">
+          <i data-lucide="clock" style="width: 20px;"></i> Menunggu Pembayaran
+        </h3>
+        <p>Selesaikan pembayaran sesuai instruksi di bawah agar pesanan segera diproses.</p>
+      </div>
+    {% elif order.status == 'processing' or order.status == 'paid' %}
+      <div class="checkout-card" style="background: #eff6ff; border-color: #93c5fd; margin-bottom: 20px;">
+        <h3 style="color: #1d4ed8;"><i data-lucide="package" style="width: 20px;"></i> Pesanan Diproses</h3>
+        <p>Pesanan kamu sedang diproses. Kami akan segera mengirimkannya.</p>
+      </div>
+    {% elif order.status == 'shipped' %}
+      <div class="checkout-card" style="background: #f0fdf4; border-color: #86efac; margin-bottom: 20px;">
+        <h3 style="color: #166534;"><i data-lucide="truck" style="width: 20px;"></i> Pesanan Dikirim</h3>
+        {% if order.tracking_number %}
+          <p>No. resi: <strong>{{ order.tracking_number }}</strong> via {{ order.courier }}</p>
+        {% endif %}
+      </div>
+    {% elif order.status == 'completed' %}
+      <div class="checkout-card" style="background: #f0fdf4; border-color: #86efac; margin-bottom: 20px;">
+        <h3 style="color: #166534;"><i data-lucide="circle-check" style="width: 20px;"></i> Pesanan Selesai</h3>
+        <p>Terima kasih telah berbelanja di Hendra Sport!</p>
+      </div>
+    {% endif %}
+
+    <!-- Info pemesan -->
+    <div class="checkout-card" style="margin-bottom: 16px;">
+      <h3>Informasi Pemesan</h3>
+      <div class="receipt-details-grid">
+        <div><small>Nama</small><strong style="display:block;">{{ order.full_name }}</strong></div>
+        <div><small>Email</small><strong style="display:block;">{{ order.guest_email }}</strong></div>
+        <div><small>Telepon</small><strong style="display:block;">{{ order.phone }}</strong></div>
+        <div><small>Kota</small><strong style="display:block;">{{ order.city }}</strong></div>
+      </div>
+      <div style="margin-top: 10px;">
+        <small>Alamat Lengkap</small>
+        <p style="margin: 2px 0 0;">{{ order.address }}</p>
+      </div>
+    </div>
+
+    <!-- Detail produk -->
+    <div class="checkout-card" style="margin-bottom: 16px;">
+      <h3>Produk Dipesan</h3>
+      {% for item in order.items.all %}
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <strong>{{ item.product_name }}</strong>
+            {% if item.size %}<span style="color: var(--color-muted); font-size: 0.85rem;"> — Ukuran {{ item.size }}</span>{% endif %}
+            <br><small style="color: var(--color-muted);">Rp {{ item.unit_price|floatformat:0|intcomma }} × {{ item.quantity }}</small>
+          </div>
+          <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>
+        </div>
+      {% endfor %}
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--color-border);">
+        <span>Ongkos Kirim ({{ order.courier }})</span>
+        <strong>Rp {{ order.shipping_cost|floatformat:0|intcomma }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 12px 0; font-size: 1.1rem;">
+        <strong>Total</strong>
+        <strong style="color: var(--color-accent);">Rp {{ order.total|floatformat:0|intcomma }}</strong>
+      </div>
+    </div>
+
+    <!-- Instruksi pembayaran -->
+    {% if order.status == 'pending' and payment %}
+      {% if payment.method == 'manual_transfer' or payment.method == 'legacy' %}
+        {% if bank_transfer_name and bank_transfer_account_name and bank_transfer_account_number %}
+          <div class="checkout-card" style="margin-bottom: 16px; background: #fffbeb;">
+            <h3><i data-lucide="landmark" style="width: 20px;"></i> Instruksi Transfer</h3>
+            <div class="receipt-details-grid">
+              <div><small>Bank</small><strong style="display:block;">{{ bank_transfer_name }}</strong></div>
+              <div><small>Nama Rekening</small><strong style="display:block;">{{ bank_transfer_account_name }}</strong></div>
+              <div><small>Nomor Rekening</small><strong style="display:block; font-size: 1.1rem; letter-spacing: 1px;">{{ bank_transfer_account_number }}</strong></div>
+              <div><small>Jumlah Transfer</small><strong style="display:block; color: var(--color-accent); font-size: 1.1rem;">Rp {{ payment.amount|floatformat:0|intcomma }}</strong></div>
+            </div>
+            <p style="margin-top: 14px; font-size: 0.85rem; color: var(--color-muted);">
+              Transfer tepat sesuai jumlah di atas, lalu kirim bukti transfer via WhatsApp ke admin toko.
+              Konfirmasi pembayaran akan diproses dalam 1×24 jam kerja.
+            </p>
+          </div>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+
+    <!-- CTA daftar akun -->
+    <div class="checkout-card" style="background: #f8fafc; text-align: center; margin-bottom: 20px;">
+      <i data-lucide="user-plus" style="width: 32px; color: var(--color-accent);"></i>
+      <h3 style="margin: 10px 0 6px;">Lacak semua pesanan dengan mudah</h3>
+      <p style="color: var(--color-muted); font-size: 0.9rem;">
+        Daftarkan akun gratis untuk melihat riwayat pesanan, upload bukti transfer, dan berbelanja lebih cepat.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 14px;">
+        <a href="{% url 'store:register' %}" class="button button--accent">Daftar Akun Gratis</a>
+        <a href="{% url 'store:login' %}" class="button button--outline">Login</a>
+      </div>
+    </div>
+
+    <p style="font-size: 0.78rem; color: var(--color-muted); text-align: center;">
+      <i data-lucide="bookmark" style="width: 13px; vertical-align: middle;"></i>
+      Simpan URL halaman ini untuk memantau status pesanan kamu.
+    </p>
+  </div>
+</section>
+{% endblock %}

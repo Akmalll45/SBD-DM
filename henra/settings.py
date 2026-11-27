@@ -297,3 +297,6 @@ EMAIL_VERIFICATION_MAX_AGE = 24 * 60 * 60
 PHONE_VERIFICATION_MAX_AGE = 10 * 60
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# URL publik situs (dipakai untuk link di email, tanpa trailing slash)
+SITE_URL = config('SITE_URL', default='https://hendra-sport.vercel.app')

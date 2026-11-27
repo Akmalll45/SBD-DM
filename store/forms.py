@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
+from django.conf import settings
 
 from .models import Order, Payment
 
@@ -79,6 +80,51 @@ class CheckoutShippingForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         shipping_options = kwargs.pop('shipping_options')
+        super().__init__(*args, **kwargs)
+        self.fields['courier'].choices = [
+            (code, f'{label} — Rp {amount:,.0f}'.replace(',', '.'))
+            for code, label, amount in shipping_options
+        ]
+
+
+class GuestCheckoutForm(forms.Form):
+    """Form untuk pembelian tamu (tanpa akun) — 1 produk langsung."""
+    full_name = forms.CharField(
+        max_length=120, label='Nama penerima',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'name', 'placeholder': 'Nama lengkap'}),
+    )
+    email = forms.EmailField(
+        label='Email (untuk konfirmasi pesanan)',
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'autocomplete': 'email', 'placeholder': 'email@contoh.com'}),
+    )
+    phone = forms.CharField(
+        max_length=30, label='Nomor telepon / WhatsApp',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'tel', 'placeholder': '08xxxxxxxxxx'}),
+    )
+    city = forms.CharField(
+        max_length=80, label='Kota / kabupaten',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'autocomplete': 'address-level2', 'placeholder': 'Kota tujuan pengiriman'}),
+    )
+    address = forms.CharField(
+        label='Alamat lengkap',
+        widget=forms.Textarea(attrs={
+            'rows': 3, 'class': 'form-textarea',
+            'autocomplete': 'street-address',
+            'placeholder': 'Jalan, RT/RW, Kelurahan, Kecamatan...',
+        }),
+    )
+    courier = forms.ChoiceField(
+        label='Layanan pengiriman',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    quantity = forms.IntegerField(
+        min_value=1, max_value=99, initial=1, label='Jumlah',
+        widget=forms.NumberInput(attrs={'class': 'form-input', 'min': '1', 'max': '99'}),
+    )
+    variant_id = forms.IntegerField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        shipping_options = kwargs.pop('shipping_options', [])
         super().__init__(*args, **kwargs)
         self.fields['courier'].choices = [
             (code, f'{label} — Rp {amount:,.0f}'.replace(',', '.'))

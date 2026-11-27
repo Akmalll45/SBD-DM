@@ -1,5 +1,6 @@
 import json
 import logging
+import secrets
 import time
 from decimal import Decimal, InvalidOperation
 
@@ -9,11 +10,13 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LogoutView
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Avg, Count, FloatField, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -21,7 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 from dashboard.models import SiteSetting
-from .forms import CheckoutShippingForm, LoginForm, PaymentProofForm, RegisterForm
+from .forms import CheckoutShippingForm, GuestCheckoutForm, LoginForm, PaymentProofForm, RegisterForm
 from .invoices import render_invoice_pdf
 from .models import (
     Cart,
@@ -46,6 +49,10 @@ from .payments import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Cookie yang di-set setelah tamu berhasil pesan (masa aktif 1 tahun)
+GUEST_ORDERED_COOKIE = 'hs_guest_ordered'
+GUEST_ORDERED_MAX_AGE = 365 * 24 * 60 * 60  # 1 tahun
 
 
 def _available_payment_methods():
@@ -529,6 +536,250 @@ def remove_cart_item(request, item_id):
         messages.info(request, 'Produk dihapus dari keranjang.')
 
     return redirect('store:cart')
+
+
+# -----------------------------------------------------------------------------
+# GUEST CHECKOUT — Pembelian tanpa akun (1 produk, transaksi pertama)
+# -----------------------------------------------------------------------------
+
+def _send_guest_order_email(order, payment):
+    """Kirim email konfirmasi pesanan ke tamu dengan link tracking."""
+    subject = f'[Hendra Sport] Konfirmasi Pesanan #{order.pk}'
+    tracking_url = settings.SITE_URL + reverse('store:guest_order_detail', kwargs={
+        'token': order.guest_token,
+    })
+
+    # Metode pembayaran untuk instruksi
+    bank_info = ''
+    if payment.method == Payment.Method.MANUAL_TRANSFER:
+        bank_info = (
+            f'\nTransfer ke:\n'
+            f'  Bank: {settings.BANK_TRANSFER_NAME}\n'
+            f'  Nama: {settings.BANK_TRANSFER_ACCOUNT_NAME}\n'
+            f'  Nomor: {settings.BANK_TRANSFER_ACCOUNT_NUMBER}\n'
+            f'  Jumlah: Rp {payment.amount:,.0f}\n'.replace(',', '.')
+        )
+
+    items_text = '\n'.join(
+        f'  - {item.product_name} (x{item.quantity}) = Rp {item.line_total:,.0f}'.replace(',', '.')
+        for item in order.items.all()
+    )
+
+    body = (
+        f'Halo {order.full_name},\n\n'
+        f'Terima kasih telah berbelanja di Hendra Sport!\n'
+        f'Pesanan Anda #{order.pk} telah kami terima.\n\n'
+        f'DETAIL PESANAN:\n{items_text}\n'
+        f'Ongkir  : Rp {order.shipping_cost:,.0f}\n'.replace(',', '.')
+        + f'Total   : Rp {order.total:,.0f}\n'.replace(',', '.')
+        + f'{bank_info}\n'
+        f'Lacak status pesanan Anda di:\n{tracking_url}\n\n'
+        f'Simpan link di atas untuk memantau pesanan Anda.\n\n'
+        f'Salam,\nTim Hendra Sport'
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[order.guest_email],
+            fail_silently=True,
+        )
+    except Exception as exc:
+        logger.warning('Failed to send guest order email for order #%s: %s', order.pk, exc)
+
+
+@require_http_methods(['GET', 'POST'])
+def guest_checkout(request, slug):
+    """
+    Halaman checkout untuk tamu (tanpa login).
+    - GET: tampilkan form pesan langsung.
+    - POST: buat order & payment, set cookie, redirect ke detail pesanan.
+
+    Jika tamu sudah pernah pesan (cookie ada), redirect ke halaman login
+    dengan pesan bahwa mereka harus login untuk transaksi selanjutnya.
+    """
+    # User yang sudah login langsung ke checkout biasa
+    if request.user.is_authenticated:
+        return redirect(reverse('store:product_detail', kwargs={'slug': slug}))
+
+    # Cek cookie: sudah pernah pesan sebelumnya?
+    if request.COOKIES.get(GUEST_ORDERED_COOKIE):
+        messages.info(
+            request,
+            'Kamu sudah pernah berbelanja sebagai tamu. '
+            'Silakan login atau daftar akun untuk melanjutkan belanja.',
+        )
+        return redirect(
+            f"{reverse('store:login')}?next={reverse('store:product_detail', kwargs={'slug': slug})}"
+        )
+
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+    shipping_options = settings.CHECKOUT_SHIPPING_OPTIONS
+    site = SiteSetting.get_solo()
+
+    initial_data = {}
+    if request.method == 'GET':
+        req_variant = request.GET.get('variant')
+        req_qty = request.GET.get('qty')
+        if req_variant and req_variant.isdigit():
+            initial_data['variant_id'] = int(req_variant)
+        if req_qty and req_qty.isdigit():
+            initial_data['quantity'] = max(1, min(99, int(req_qty)))
+
+    form = GuestCheckoutForm(
+        request.POST or None,
+        initial=initial_data if request.method == 'GET' else None,
+        shipping_options=shipping_options,
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        d = form.cleaned_data
+        # Cek apakah email ini sudah pernah dipakai untuk pesanan tamu sebelumnya
+        if Order.objects.filter(is_guest_order=True, guest_email__iexact=d['email']).exists():
+            messages.info(
+                request,
+                f"Email {d['email']} sudah pernah melakukan pembelian sebagai tamu. "
+                'Silakan login atau daftar akun untuk transaksi selanjutnya.',
+            )
+            return redirect(
+                f"{reverse('store:login')}?next={reverse('store:product_detail', kwargs={'slug': slug})}"
+            )
+
+        quantity = d['quantity']
+        variant_id = d.get('variant_id')
+        variant = None
+
+        # Validasi variant & stok
+        if variant_id:
+            variant = get_object_or_404(ProductVariant, pk=variant_id, product=product)
+            if variant.stock < quantity:
+                form.add_error('quantity', f'Stok ukuran {variant.size} hanya tersisa {variant.stock}.')
+                return render(request, 'store/guest_checkout.html', {
+                    'form': form, 'product': product, 'site': site, 'shipping_options': shipping_options,
+                })
+        else:
+            if product.stock < quantity:
+                form.add_error('quantity', f'Stok produk hanya tersisa {product.stock}.')
+                return render(request, 'store/guest_checkout.html', {
+                    'form': form, 'product': product, 'site': site, 'shipping_options': shipping_options,
+                })
+
+        # Hitung biaya (jika produk free_shipping, ongkir = 0)
+        courier_code = d['courier']
+        if product.free_shipping:
+            shipping_rate = Decimal('0')
+        else:
+            shipping_rate = Decimal(
+                next((rate for code, _, rate in shipping_options if code == courier_code), 0)
+            )
+        unit_price = product.discount_price or product.base_price
+        subtotal = unit_price * quantity
+        total = subtotal + shipping_rate
+
+        payment_methods = _available_payment_methods()
+        if not payment_methods:
+            messages.error(request, 'Belum ada metode pembayaran yang tersedia. Hubungi admin toko.')
+            return render(request, 'store/guest_checkout.html', {
+                'form': form, 'product': product, 'site': site,
+            })
+
+        with transaction.atomic():
+            # Kurangi stok
+            if variant:
+                ProductVariant.objects.filter(pk=variant.pk).update(
+                    stock=variant.stock - quantity
+                )
+            else:
+                Product.objects.filter(pk=product.pk).update(
+                    stock=product.stock - quantity
+                )
+
+            # Buat order tamu
+            order = Order.objects.create(
+                user=None,
+                is_guest_order=True,
+                guest_email=d['email'],
+                guest_token=secrets.token_hex(32),
+                full_name=d['full_name'],
+                phone=d['phone'],
+                city=d['city'],
+                address=d['address'],
+                courier=courier_code,
+                shipping_cost=shipping_rate,
+                total=total,
+                stock_reserved_at=timezone.now(),
+            )
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                variant=variant,
+                product_name=product.name,
+                size=variant.size if variant else '',
+                unit_price=unit_price,
+                quantity=quantity,
+                sablon_fee=0,
+                has_sablon=False,
+            )
+
+            # Buat payment — gunakan metode pertama yang tersedia
+            default_method = payment_methods[0][0]
+            gateway_oid = (
+                new_gateway_order_id(order.pk)
+                if default_method == Payment.Method.MIDTRANS
+                else None
+            )
+            payment = Payment.objects.create(
+                order=order,
+                method=Payment.Method.LEGACY if len(payment_methods) > 1 else default_method,
+                amount=total,
+                gateway_order_id=gateway_oid,
+            )
+            record_payment_status(payment, 'Pesanan tamu dibuat.')
+
+        # Kirim email konfirmasi
+        _send_guest_order_email(order, payment)
+
+        # Set cookie "sudah pernah pesan"
+        response = redirect('store:guest_order_detail', token=order.guest_token)
+        response.set_cookie(
+            GUEST_ORDERED_COOKIE,
+            '1',
+            max_age=GUEST_ORDERED_MAX_AGE,
+            httponly=True,
+            samesite='Lax',
+        )
+        messages.success(
+            request,
+            f'Pesanan #{order.pk} berhasil dibuat! Cek email {order.guest_email} untuk konfirmasi.',
+        )
+        return response
+
+    return render(request, 'store/guest_checkout.html', {
+        'form': form,
+        'product': product,
+        'site': site,
+        'shipping_options': shipping_options,
+    })
+
+
+def guest_order_detail(request, token):
+    """
+    Halaman tracking pesanan tamu — dapat diakses tanpa login via token unik.
+    """
+    order = get_object_or_404(
+        Order.objects.select_related('payment').prefetch_related('items'),
+        guest_token=token,
+        is_guest_order=True,
+    )
+    return render(request, 'store/guest_order_detail.html', {
+        'order': order,
+        'payment': order.payment,
+        'bank_transfer_name': settings.BANK_TRANSFER_NAME,
+        'bank_transfer_account_name': settings.BANK_TRANSFER_ACCOUNT_NAME,
+        'bank_transfer_account_number': settings.BANK_TRANSFER_ACCOUNT_NUMBER,
+    })
 
 
 @login_required(login_url='store:login')
