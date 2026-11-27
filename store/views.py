@@ -36,6 +36,7 @@ from .models import (
     Product,
     ProductRating,
     ProductVariant,
+    validate_sablon_roster,
 )
 from .payments import (
     PaymentGatewayError,
@@ -426,6 +427,7 @@ def add_to_cart(request, product_id):
         quantity = 1
 
     # Sablon parameters - strictly only permitted for jerseys with allow_custom_print
+    uploaded_roster = None
     if product.allow_custom_print and product.is_jersey:
         has_sablon = request.POST.get('has_sablon') in ('1', 'true', 'on', 'yes')
         custom_name = request.POST.get('custom_name', '').strip().upper()[:16] if has_sablon else ''
@@ -433,6 +435,22 @@ def add_to_cart(request, product_id):
         custom_number = None
         if has_sablon and custom_number_raw.isdigit():
             custom_number = max(0, min(99, int(custom_number_raw)))
+
+        # File daftar nama sablon hanya berlaku jika has_sablon aktif dan quantity > 1
+        if has_sablon and quantity > 1 and 'sablon_roster' in request.FILES:
+            uploaded_roster = request.FILES['sablon_roster']
+            ext = uploaded_roster.name.rpartition('.')[2].lower() if '.' in uploaded_roster.name else ''
+            allowed_ext = {'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'}
+            try:
+                if ext not in allowed_ext:
+                    raise ValidationError('Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).')
+                validate_sablon_roster(uploaded_roster)
+            except ValidationError as exc:
+                err_msg = exc.messages[0] if getattr(exc, 'messages', None) else str(exc)
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': err_msg}, status=400)
+                messages.error(request, err_msg)
+                return redirect(request.META.get('HTTP_REFERER', reverse('store:home')))
     else:
         has_sablon = False
         custom_name = ''
@@ -445,21 +463,35 @@ def add_to_cart(request, product_id):
     line_key = f"{variant.id}|{int(has_sablon)}|{custom_name}|{num_str}"
 
     with transaction.atomic():
-        item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            line_key=line_key,
-            defaults={
-                'product': product,
-                'variant': variant,
-                'quantity': quantity,
-                'has_sablon': has_sablon,
-                'custom_name': custom_name,
-                'custom_number': custom_number,
-            }
-        )
-        if not created:
-            item.quantity += quantity
+        if uploaded_roster is not None:
+            # Jika ada file daftar nama, simpan sebagai baris keranjang terpisah agar file tidak tertimpa
+            item = CartItem(
+                cart=cart,
+                product=product,
+                variant=variant,
+                quantity=quantity,
+                has_sablon=has_sablon,
+                custom_name=custom_name,
+                custom_number=custom_number,
+                sablon_roster=uploaded_roster,
+            )
             item.save()
+        else:
+            item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                line_key=line_key,
+                defaults={
+                    'product': product,
+                    'variant': variant,
+                    'quantity': quantity,
+                    'has_sablon': has_sablon,
+                    'custom_name': custom_name,
+                    'custom_number': custom_number,
+                }
+            )
+            if not created:
+                item.quantity += quantity
+                item.save()
 
     # JSON response for AJAX sliding drawer
     cart_message = product.name
@@ -979,6 +1011,7 @@ def checkout_confirm(request):
                             custom_name=item.custom_name,
                             custom_number=item.custom_number,
                             has_sablon=item.has_sablon,
+                            sablon_roster=item.sablon_roster,
                         )
 
                     for variant_id, quantity in quantities.items():

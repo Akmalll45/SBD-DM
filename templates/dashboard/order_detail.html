@@ -99,6 +99,14 @@
                     <div style="font-family: var(--font-heading); font-size: 2rem; font-weight: 800; line-height: 1; color: var(--admin-accent); margin-top: 2px;">
                       #{{ item.custom_number|default:"00" }}
                     </div>
+                    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 6px;">
+                      Biaya Sablon: Rp {{ item.sablon_fee|floatformat:0|intcomma }} &times; {{ item.quantity }} = <strong style="color:#fff;">Rp {{ item.sablon_total|floatformat:0|intcomma }}</strong>
+                    </div>
+                    {% if item.sablon_roster %}
+                      <a href="{{ item.sablon_roster.url }}" target="_blank" rel="noopener" class="btn-admin btn-admin--primary btn-admin--sm" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; width: 100%; justify-content: center;">
+                        <i data-lucide="download" style="width: 13px;"></i> Unduh Daftar Nama
+                      </a>
+                    {% endif %}
                   </div>
                 {% else %}
                   <span style="font-size: 0.82rem; color: var(--admin-text-muted); font-style: italic;">

@@ -49,8 +49,20 @@
                     <div class="cart-sablon-tag">
                       <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
                       Custom Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
-                      <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0|intcomma }})</span>
+                      {% if item.quantity > 1 %}
+                        <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0|intcomma }}/pcs &bull; Total Sablon: Rp {{ item.sablon_total|floatformat:0|intcomma }})</span>
+                      {% else %}
+                        <span style="color: #0369a1; font-weight: 500;">(+Rp {{ SABLON_FEE|floatformat:0|intcomma }})</span>
+                      {% endif %}
                     </div>
+                    {% if item.sablon_roster %}
+                      <div style="margin-top: 4px; font-size: 0.78rem;">
+                        <a href="{{ item.sablon_roster.url }}" target="_blank" rel="noopener" style="color: #0284c7; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                          <i data-lucide="file-text" style="width: 13px; height: 13px;"></i>
+                          Lihat File Daftar Nama Sablon
+                        </a>
+                      </div>
+                    {% endif %}
                   {% endif %}
 
                   <div style="margin-top: 6px;">

@@ -109,9 +109,10 @@
             <span>{% if product.is_jersey %}Harga Jersey{% else %}Harga Produk{% endif %}: <strong>Rp {{ product.base_price|floatformat:0|intcomma }}</strong></span>
             {% if product.is_jersey %}
             <span id="sablon-fee-note" style="display: none;" class="active">
-              + Sablon Polyflex (Rp {{ sablon_fee|floatformat:0|intcomma }})
+              + Sablon Polyflex (<span id="sablon-fee-detail">Rp {{ sablon_fee|floatformat:0|intcomma }} / pcs</span>)
             </span>
             {% endif %}
+            <span id="qty-total-note" style="display: none; color: var(--color-primary); font-weight: 700;"></span>
           </div>
         </div>
 
@@ -124,6 +125,7 @@
           id="add-to-cart-form"
           action="{% url 'store:add_to_cart' product.id %}"
           method="post"
+          enctype="multipart/form-data"
           data-base-price="{{ product.base_price|default:0 }}"
           data-sablon-fee="{{ sablon_fee|default:20000 }}"
         >
@@ -251,6 +253,33 @@
                     </p>
                   {% endif %}
                 </div>
+              </div>
+
+              <!-- Upload Daftar Nama Sablon (Hanya aktif jika jumlah > 1) -->
+              <div id="bulk-sablon-upload" hidden style="margin-top: 16px; padding: 14px; border: 1.5px dashed #0284c7; border-radius: 10px; background: #f0f9ff;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                  <strong style="font-size: 0.86rem; color: #0369a1; display: inline-flex; align-items: center; gap: 6px;">
+                    <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
+                    Daftar Nama &amp; Nomor Sablon (Pesanan &gt; 1 Jersey)
+                  </strong>
+                  <span style="font-size: 0.72rem; color: #0369a1; font-weight: 600;">Opsional jika nama berbeda-beda</span>
+                </div>
+                <p style="font-size: 0.78rem; color: #334155; margin: 6px 0 10px;">
+                  Unggah file daftar nama &amp; nomor punggung untuk setiap jersey dalam format <strong>Gambar (JPG, PNG), Word (.doc/.docx), atau Excel (.xls/.xlsx)</strong> (maks. 5 MB).
+                </p>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <input
+                    type="file"
+                    id="sablon-roster-input"
+                    name="sablon_roster"
+                    accept=".jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    style="font-size: 0.82rem; max-width: 100%;"
+                  >
+                  <button type="button" id="sablon-roster-clear" hidden style="font-size: 0.76rem; color: #b91c1c; background: #fee2e2; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Hapus File
+                  </button>
+                </div>
+                <p id="sablon-roster-error" role="alert" hidden style="color: #b91c1c; font-size: 0.78rem; margin: 6px 0 0; font-weight: 600;"></p>
               </div>
             </div>
           </div>
@@ -502,6 +531,87 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 2. Custom Sablon Toggle & Price Calculation Logic
+  const sablonFeeDetail = document.getElementById('sablon-fee-detail');
+  const qtyTotalNote = document.getElementById('qty-total-note');
+  const bulkSablonUpload = document.getElementById('bulk-sablon-upload');
+  const sablonRosterInput = document.getElementById('sablon-roster-input');
+  const sablonRosterClear = document.getElementById('sablon-roster-clear');
+  const sablonRosterError = document.getElementById('sablon-roster-error');
+
+  function updatePriceAndBulkState() {
+    const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+    const isSablon = Boolean(sablonCheckbox && sablonCheckbox.checked);
+    const unitPrice = isSablon ? (BASE_PRICE + SABLON_FEE) : BASE_PRICE;
+
+    if (totalUnitPriceDisplay) {
+      totalUnitPriceDisplay.textContent = formatIDR(unitPrice);
+    }
+    if (sablonFeeDetail) {
+      if (isSablon && qty > 1) {
+        sablonFeeDetail.textContent = `${formatIDR(SABLON_FEE)} × ${qty} pcs = ${formatIDR(SABLON_FEE * qty)}`;
+      } else {
+        sablonFeeDetail.textContent = `${formatIDR(SABLON_FEE)} / pcs`;
+      }
+    }
+    if (qtyTotalNote) {
+      if (qty > 1) {
+        const sablonNote = isSablon ? ` (termasuk sablon ${formatIDR(SABLON_FEE * qty)})` : '';
+        qtyTotalNote.textContent = `Subtotal ${qty} pcs: ${formatIDR(unitPrice * qty)}${sablonNote}`;
+        qtyTotalNote.style.display = 'block';
+      } else {
+        qtyTotalNote.style.display = 'none';
+      }
+    }
+    if (bulkSablonUpload) {
+      const showBulk = isSablon && qty > 1;
+      bulkSablonUpload.hidden = !showBulk;
+      if (!showBulk && sablonRosterInput && sablonRosterInput.value) {
+        sablonRosterInput.value = '';
+        if (sablonRosterClear) sablonRosterClear.hidden = true;
+        if (sablonRosterError) sablonRosterError.hidden = true;
+      }
+    }
+  }
+
+  if (sablonRosterInput) {
+    const ALLOWED_ROSTER_EXT = ['jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+    sablonRosterInput.addEventListener('change', () => {
+      if (sablonRosterError) sablonRosterError.hidden = true;
+      const file = sablonRosterInput.files && sablonRosterInput.files[0];
+      if (!file) {
+        if (sablonRosterClear) sablonRosterClear.hidden = true;
+        return;
+      }
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!ALLOWED_ROSTER_EXT.includes(ext)) {
+        sablonRosterInput.value = '';
+        if (sablonRosterClear) sablonRosterClear.hidden = true;
+        if (sablonRosterError) {
+          sablonRosterError.textContent = 'Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).';
+          sablonRosterError.hidden = false;
+        }
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        sablonRosterInput.value = '';
+        if (sablonRosterClear) sablonRosterClear.hidden = true;
+        if (sablonRosterError) {
+          sablonRosterError.textContent = 'Ukuran file maksimal 5 MB.';
+          sablonRosterError.hidden = false;
+        }
+        return;
+      }
+      if (sablonRosterClear) sablonRosterClear.hidden = false;
+    });
+  }
+  if (sablonRosterClear && sablonRosterInput) {
+    sablonRosterClear.addEventListener('click', () => {
+      sablonRosterInput.value = '';
+      sablonRosterClear.hidden = true;
+      if (sablonRosterError) sablonRosterError.hidden = true;
+    });
+  }
+
   if (sablonCheckbox && sablonHeader && sablonCard && sablonBody && sablonFeeNote) {
     function updateSablonState() {
       const isChecked = sablonCheckbox.checked;
@@ -510,14 +620,13 @@ document.addEventListener('DOMContentLoaded', () => {
         sablonCard.classList.add('active');
         sablonBody.classList.add('open');
         sablonFeeNote.style.display = 'inline-block';
-        totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE + SABLON_FEE);
         if (nameInput) nameInput.focus();
       } else {
         sablonCard.classList.remove('active');
         sablonBody.classList.remove('open');
         sablonFeeNote.style.display = 'none';
-        totalUnitPriceDisplay.textContent = formatIDR(BASE_PRICE);
       }
+      updatePriceAndBulkState();
     }
 
     sablonHeader.addEventListener('click', (e) => {
@@ -621,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let current = parseInt(qtyInput.value) || 1;
     if (current > 1) {
       qtyInput.value = current - 1;
+      updatePriceAndBulkState();
     }
   });
 
@@ -628,6 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let current = parseInt(qtyInput.value) || 1;
     if (current < 99) {
       qtyInput.value = current + 1;
+      updatePriceAndBulkState();
     }
   });
 
@@ -679,6 +790,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Open Sliding Cart Drawer
         if (window.openCartDrawer) {
           window.openCartDrawer();
+        }
+      } else if (response.status === 400) {
+        const data = await response.json();
+        if (window.showToast) {
+          window.showToast(data.message || 'Gagal menambahkan produk ke keranjang.', 'error');
         }
       } else {
         // Fallback standard submit

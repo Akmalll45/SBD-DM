@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 
-from .storage import PrivatePaymentProofStorage
+from .storage import PrivatePaymentProofStorage, SablonRosterStorage
 
 
 class Category(models.Model):
@@ -189,6 +189,31 @@ class Cart(models.Model):
         return sum((item.line_total for item in self.items.all()), Decimal('0'))
 
 
+def sablon_roster_upload_path(instance, filename):
+    extension = filename.rpartition('.')[2].lower()
+    return f'sablon-rosters/{uuid4().hex}.{extension}'
+
+
+def validate_sablon_roster(upload):
+    if upload.size > 5 * 1024 * 1024:
+        raise ValidationError('Ukuran file daftar sablon maksimal 5 MB.')
+
+    extension = upload.name.rpartition('.')[2].lower()
+    header = upload.read(8)
+    upload.seek(0)
+    valid_headers = {
+        'jpg': header.startswith(b'\xff\xd8\xff'),
+        'jpeg': header.startswith(b'\xff\xd8\xff'),
+        'png': header.startswith(b'\x89PNG\r\n\x1a\n'),
+        'docx': header.startswith(b'PK\x03\x04'),
+        'xlsx': header.startswith(b'PK\x03\x04'),
+        'doc': header.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'),
+        'xls': header.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'),
+    }
+    if not valid_headers.get(extension, False):
+        raise ValidationError('Format file harus JPG, PNG, Word (.doc/.docx), atau Excel (.xls/.xlsx).')
+
+
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -201,6 +226,16 @@ class CartItem(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(99)],
     )
     has_sablon = models.BooleanField(default=False)
+    sablon_roster = models.FileField(
+        upload_to=sablon_roster_upload_path,
+        storage=SablonRosterStorage(),
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']),
+            validate_sablon_roster,
+        ],
+    )
     line_key = models.CharField(max_length=80, editable=False, default='')
 
     class Meta:
@@ -214,7 +249,8 @@ class CartItem(models.Model):
     def save(self, *args, **kwargs):
         number = '' if self.custom_number is None else str(self.custom_number)
         name = (self.custom_name or '').strip().upper()
-        self.line_key = f'{self.variant_id}|{int(self.has_sablon)}|{name}|{number}'
+        roster_key = f'|{self.sablon_roster.name}' if self.sablon_roster else ''
+        self.line_key = f'{self.variant_id}|{int(self.has_sablon)}|{name}|{number}{roster_key}'[:80]
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -230,6 +266,12 @@ class CartItem(models.Model):
     @property
     def line_total(self):
         return self.unit_price * self.quantity
+
+    @property
+    def sablon_total(self):
+        if not self.has_sablon:
+            return Decimal('0')
+        return Decimal(settings.SABLON_FEE) * self.quantity
 
 
 class Order(models.Model):
@@ -397,6 +439,12 @@ class OrderItem(models.Model):
     custom_name = models.CharField(max_length=16, blank=True)
     custom_number = models.PositiveSmallIntegerField(null=True, blank=True)
     has_sablon = models.BooleanField(default=False)
+    sablon_roster = models.FileField(
+        upload_to=sablon_roster_upload_path,
+        storage=SablonRosterStorage(),
+        blank=True,
+        null=True,
+    )
 
     def __str__(self):
         return f'{self.quantity} × {self.product_name}'

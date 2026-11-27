@@ -92,7 +92,13 @@
                 <div>
                   <strong style="display:block; font-size:0.85rem;">{{ item.product.name }}</strong>
                   <span style="font-size:0.75rem; color:var(--color-muted);">{% if item.product.is_equipment %}Produk{% else %}Ukuran {{ item.variant.size }}{% endif %} · Qty {{ item.quantity }}</span>
-                  {% if item.has_sablon %}<div style="font-size:0.72rem; color:#0284c7; font-weight:700;">Sablon: {{ item.custom_name }} #{{ item.custom_number }}</div>{% endif %}
+                  {% if item.has_sablon %}
+                    <div style="font-size:0.72rem; color:#0284c7; font-weight:700;">
+                      Sablon: {{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}
+                      {% if item.quantity > 1 %}(Total Sablon: Rp {{ item.sablon_total|floatformat:0|intcomma }}){% endif %}
+                      {% if item.sablon_roster %}&bull; Daftar nama terlampir{% endif %}
+                    </div>
+                  {% endif %}
                 </div>
               </div>
               <strong>Rp {{ item.line_total|floatformat:0|intcomma }}</strong>

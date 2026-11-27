@@ -19,6 +19,12 @@
         {% if item.has_sablon %}
           <div class="drawer-item__sablon">
             Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
+            {% if item.quantity > 1 %}
+              <span style="display:block; font-size:0.72rem; color:#0369a1;">Total Sablon: Rp {{ item.sablon_total|floatformat:0|intcomma }}</span>
+            {% endif %}
+            {% if item.sablon_roster %}
+              <span style="display:block; font-size:0.72rem; color:#0284c7;">&#128206; Daftar nama terlampir</span>
+            {% endif %}
           </div>
         {% endif %}
         <div class="drawer-item__bottom">
