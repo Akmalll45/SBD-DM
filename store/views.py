@@ -515,17 +515,19 @@ def update_cart_item(request, item_id):
     return redirect('store:cart')
 
 
-@require_POST
 @login_required(login_url='store:login')
 def remove_cart_item(request, item_id):
     """
     Remove item from cart entirely.
+    POST: hapus item. GET: redirect ke cart (fallback aman jika CSRF/redirect loop).
     """
     cart = get_object_or_404(Cart, user=request.user)
-    item = get_object_or_404(CartItem, id=item_id, cart=cart)
-    item.delete()
 
-    messages.info(request, 'Produk dihapus dari keranjang.')
+    if request.method == 'POST':
+        item = get_object_or_404(CartItem, id=item_id, cart=cart)
+        item.delete()
+        messages.info(request, 'Produk dihapus dari keranjang.')
+
     return redirect('store:cart')
 
 

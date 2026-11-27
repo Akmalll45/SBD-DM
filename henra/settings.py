@@ -65,6 +65,14 @@ if VERCEL_URL:
     if vercel_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(vercel_origin)
 
+# Selalu percayai domain utama Hendra Sport agar CSRF form POST tidak gagal
+_HENDRA_SPORT_ORIGINS = [
+    'https://hendra-sport.vercel.app',
+]
+for _origin in _HENDRA_SPORT_ORIGINS:
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = config(
     'SECURE_SSL_REDIRECT',
