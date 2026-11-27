@@ -16,12 +16,28 @@
 
     <!-- Status banner -->
     {% if order.status == 'pending' %}
-      <div class="checkout-card" style="background: #fffbeb; border-color: #fcd34d; margin-bottom: 20px;">
-        <h3 style="color: #92400e;">
-          <i data-lucide="clock" style="width: 20px;"></i> Menunggu Pembayaran
-        </h3>
-        <p>Selesaikan pembayaran sesuai instruksi di bawah agar pesanan segera diproses.</p>
-      </div>
+      {% if payment and payment.status == 'awaiting_verification' %}
+        <div class="checkout-card" style="background: #eff6ff; border-color: #93c5fd; margin-bottom: 20px;">
+          <h3 style="color: #1d4ed8;">
+            <i data-lucide="clock" style="width: 20px;"></i> Menunggu Verifikasi Admin
+          </h3>
+          <p>Bukti transfer kamu sudah kami terima dan sedang dalam proses verifikasi oleh admin.</p>
+        </div>
+      {% elif payment and payment.status == 'failed' %}
+        <div class="checkout-card" style="background: #fef2f2; border-color: #fca5a5; margin-bottom: 20px;">
+          <h3 style="color: #b91c1c;">
+            <i data-lucide="alert-circle" style="width: 20px;"></i> Verifikasi Pembayaran Ditolak
+          </h3>
+          <p>Silakan periksa catatan verifikasi dan unggah ulang bukti transfer di bawah.</p>
+        </div>
+      {% else %}
+        <div class="checkout-card" style="background: #fffbeb; border-color: #fcd34d; margin-bottom: 20px;">
+          <h3 style="color: #92400e;">
+            <i data-lucide="clock" style="width: 20px;"></i> Menunggu Pembayaran
+          </h3>
+          <p>Selesaikan pembayaran sesuai instruksi di bawah agar pesanan segera diproses.</p>
+        </div>
+      {% endif %}
     {% elif order.status == 'processing' or order.status == 'paid' %}
       <div class="checkout-card" style="background: #eff6ff; border-color: #93c5fd; margin-bottom: 20px;">
         <h3 style="color: #1d4ed8;"><i data-lucide="package" style="width: 20px;"></i> Pesanan Diproses</h3>
