@@ -666,11 +666,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         const data = await response.json();
 
-        // Update Nav Badge
-        const navCount = document.getElementById('nav-cart-count');
-        const drawerCount = document.getElementById('drawer-cart-count');
-        if (navCount) navCount.textContent = data.cart_items_count;
-        if (drawerCount) drawerCount.textContent = data.cart_items_count;
+        // Update drawer, badge & subtotal langsung dari response (tanpa fetch ulang halaman)
+        if (window.updateCartDrawerUI) {
+          window.updateCartDrawerUI(data);
+        }
 
         // Show toast
         if (window.showToast) {
@@ -681,23 +680,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.openCartDrawer) {
           window.openCartDrawer();
         }
-
-        // Refresh drawer content in background
-        fetch(window.location.href)
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newDrawer = doc.getElementById('cart-drawer-items');
-            const newFooter = doc.getElementById('cart-drawer-footer');
-            if (newDrawer) document.getElementById('cart-drawer-items').innerHTML = newDrawer.innerHTML;
-            const drawerFooter = document.getElementById('cart-drawer-footer');
-            if (newFooter && drawerFooter) {
-              drawerFooter.innerHTML = newFooter.innerHTML;
-              drawerFooter.hidden = newFooter.hidden;
-            }
-            if (window.lucide) window.lucide.createIcons();
-          });
       } else {
         // Fallback standard submit
         form.submit();

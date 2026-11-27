@@ -1,0 +1,42 @@
+{% load humanize %}
+{% if cart_items %}
+  {% for item in cart_items %}
+    <div class="drawer-item" id="drawer-item-{{ item.id }}">
+      <div class="drawer-item__thumb">
+        {% if item.product.display_image %}
+          <img src="{{ item.product.display_image.url }}" alt="{{ item.product.name }}">
+        {% else %}
+          <i data-lucide="shirt" style="width: 28px; height: 28px; color: var(--color-muted);"></i>
+        {% endif %}
+      </div>
+      <div class="drawer-item__details">
+        <a href="{% url 'store:product_detail' item.product.slug %}" class="drawer-item__title">
+          {{ item.product.name }}
+        </a>
+        <div class="drawer-item__meta">
+          {% if item.product.is_equipment %}Produk{% else %}Ukuran: <strong>{{ item.variant.size }}</strong>{% endif %} &bull; Qty: <strong>{{ item.quantity }}</strong>
+        </div>
+        {% if item.has_sablon %}
+          <div class="drawer-item__sablon">
+            Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
+          </div>
+        {% endif %}
+        <div class="drawer-item__bottom">
+          <span class="drawer-item__price">Rp {{ item.line_total|floatformat:0|intcomma }}</span>
+          <form action="{% url 'store:remove_cart_item' item.id %}" method="post" class="drawer-remove-form" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="drawer-item__remove">Hapus</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="drawer-empty">
+    <i data-lucide="shopping-bag"></i>
+    <p>Keranjang belanja Anda masih kosong.</p>
+    <a href="{% url 'store:shop' %}" class="button button--dark" style="margin-top: 12px;" onclick="closeCartDrawer();">
+      Belanja Sekarang
+    </a>
+  </div>
+{% endif %}

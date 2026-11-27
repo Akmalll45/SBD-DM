@@ -129,47 +129,7 @@
     </div>
 
     <div class="cart-drawer__items" id="cart-drawer-items">
-      {% if cart and cart.items.all %}
-        {% for item in cart.items.all %}
-          <div class="drawer-item" id="drawer-item-{{ item.id }}">
-            <div class="drawer-item__thumb">
-              {% if item.product.display_image %}
-                <img src="{{ item.product.display_image.url }}" alt="{{ item.product.name }}">
-              {% else %}
-                <i data-lucide="shirt" style="width: 28px; height: 28px; color: var(--color-muted);"></i>
-              {% endif %}
-            </div>
-            <div class="drawer-item__details">
-              <a href="{% url 'store:product_detail' item.product.slug %}" class="drawer-item__title">
-                {{ item.product.name }}
-              </a>
-              <div class="drawer-item__meta">
-                {% if item.product.is_equipment %}Produk{% else %}Ukuran: <strong>{{ item.variant.size }}</strong>{% endif %} &bull; Qty: <strong>{{ item.quantity }}</strong>
-              </div>
-              {% if item.has_sablon %}
-                <div class="drawer-item__sablon">
-                  Sablon: <strong>{{ item.custom_name|default:"" }}{% if item.custom_number != None and item.custom_number != '' %} #{{ item.custom_number }}{% endif %}</strong>
-                </div>
-              {% endif %}
-              <div class="drawer-item__bottom">
-                <span class="drawer-item__price">Rp {{ item.line_total|floatformat:0|intcomma }}</span>
-                <form action="{% url 'store:remove_cart_item' item.id %}" method="post" style="display:inline;">
-                  {% csrf_token %}
-                  <button type="submit" class="drawer-item__remove">Hapus</button>
-                </form>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="drawer-empty">
-          <i data-lucide="shopping-bag"></i>
-          <p>Keranjang belanja Anda masih kosong.</p>
-          <a href="{% url 'store:shop' %}" class="button button--dark" style="margin-top: 12px;" onclick="closeCartDrawer();">
-            Belanja Sekarang
-          </a>
-        </div>
-      {% endif %}
+      {% include 'store/_cart_drawer_items.html' %}
     </div>
 
     <div class="cart-drawer__footer" id="cart-drawer-footer" {% if not cart_items_count %}hidden{% endif %}>
@@ -261,6 +221,61 @@
 
   <!-- Main Storefront JavaScript -->
   <script src="{% static 'js/main.js' %}?v=1.2"></script>
+  <script>
+    window.updateCartDrawerUI = function (data) {
+      const navCount = document.getElementById('nav-cart-count');
+      const drawerCount = document.getElementById('drawer-cart-count');
+      const drawerItems = document.getElementById('cart-drawer-items');
+      const drawerFooter = document.getElementById('cart-drawer-footer');
+      const drawerSubtotal = document.getElementById('drawer-subtotal');
+
+      if (navCount && data.cart_items_count !== undefined) navCount.textContent = data.cart_items_count;
+      if (drawerCount && data.cart_items_count !== undefined) drawerCount.textContent = data.cart_items_count;
+      if (drawerItems && data.drawer_items_html !== undefined) {
+        drawerItems.innerHTML = data.drawer_items_html;
+      }
+      if (drawerSubtotal && data.cart_total !== undefined) {
+        drawerSubtotal.textContent = 'Rp ' + Number(data.cart_total).toLocaleString('id-ID');
+      }
+      if (drawerFooter && data.cart_items_count !== undefined) {
+        drawerFooter.hidden = data.cart_items_count <= 0;
+      }
+      if (window.lucide) window.lucide.createIcons();
+    };
+
+    (function () {
+      const drawerItems = document.getElementById('cart-drawer-items');
+      if (!drawerItems) return;
+      drawerItems.addEventListener('submit', async function (e) {
+        const form = e.target.closest('.drawer-remove-form');
+        if (!form) return;
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Menghapus...';
+        }
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            window.updateCartDrawerUI(data);
+            if (window.showToast && data.message) {
+              window.showToast(data.message, 'info');
+            }
+          } else {
+            form.submit();
+          }
+        } catch (err) {
+          form.submit();
+        }
+      });
+    })();
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

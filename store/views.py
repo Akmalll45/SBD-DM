@@ -467,16 +467,29 @@ def add_to_cart(request, product_id):
         cart_message = f'{cart_message} ({variant.size})'
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        total_items = sum(i.quantity for i in cart.items.all())
-        return JsonResponse({
-            'success': True,
-            'message': f'{cart_message} ditambahkan ke keranjang.',
-            'cart_items_count': total_items,
-            'cart_total': float(cart.total),
-        })
+        return JsonResponse(_cart_ajax_payload(request, cart, f'{cart_message} ditambahkan ke keranjang.'))
 
     messages.success(request, f'{cart_message} berhasil ditambahkan ke keranjang.')
     return redirect('store:cart')
+
+
+def _cart_ajax_payload(request, cart, message=''):
+    """Hitung ringkasan keranjang dalam 1 query dan render partial drawer."""
+    cart_items = list(cart.items.select_related('product', 'variant').order_by('pk'))
+    total_items = sum(i.quantity for i in cart_items)
+    cart_total = sum((i.line_total for i in cart_items), Decimal('0'))
+    drawer_items_html = render_to_string(
+        'store/_cart_drawer_items.html',
+        {'cart_items': cart_items},
+        request=request,
+    )
+    return {
+        'success': True,
+        'message': message,
+        'cart_items_count': total_items,
+        'cart_total': float(cart_total),
+        'drawer_items_html': drawer_items_html,
+    }
 
 
 @require_POST
@@ -512,12 +525,7 @@ def update_cart_item(request, item_id):
         pass
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        total_items = sum(i.quantity for i in cart.items.all())
-        return JsonResponse({
-            'success': True,
-            'cart_items_count': total_items,
-            'cart_total': float(cart.total),
-        })
+        return JsonResponse(_cart_ajax_payload(request, cart, 'Keranjang diperbarui.'))
 
     return redirect('store:cart')
 
@@ -533,6 +541,8 @@ def remove_cart_item(request, item_id):
     if request.method == 'POST':
         item = get_object_or_404(CartItem, id=item_id, cart=cart)
         item.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse(_cart_ajax_payload(request, cart, 'Produk dihapus dari keranjang.'))
         messages.info(request, 'Produk dihapus dari keranjang.')
 
     return redirect('store:cart')

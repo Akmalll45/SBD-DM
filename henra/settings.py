@@ -180,7 +180,8 @@ if DB_ENGINE == 'mysql':
             'PASSWORD': config('DB_PASSWORD', default=''),
             'HOST': config('DB_HOST', default='127.0.0.1'),
             'PORT': config('DB_PORT', default='3306'),
-            'CONN_MAX_AGE': 0,
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_HEALTH_CHECKS': True,
             'OPTIONS': MYSQL_OPTIONS,
         }
     }
