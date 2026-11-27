@@ -57,6 +57,10 @@
               <a href="{% url 'store:about' %}#hubungi-kami"><i data-lucide="message-circle" aria-hidden="true"></i><span>Hubungi Kami</span></a>
             </div>
           </div>
+          <button class="nav-link" id="track-order-toggle" type="button" style="background:none; border:none; cursor:pointer; font:inherit; display:inline-flex; align-items:center; gap:5px; padding:0;">
+            <i data-lucide="package-search" style="width: 15px; height: 15px;" aria-hidden="true"></i>
+            <span>Lacak Pesanan</span>
+          </button>
         </div>
 
         <!-- Action Icons: Search, Cart, Auth -->
@@ -216,11 +220,125 @@
     </div>
   </footer>
 
+  <!-- Box Modal Lacak Pesanan Tamu -->
+  <dialog id="track-order-modal" aria-labelledby="track-order-title" style="border:none; border-radius:12px; padding:0; max-width:440px; width:calc(100% - 32px); box-shadow:0 24px 60px rgba(15,23,42,0.28); margin:auto;">
+    <div style="padding:24px; background:#fff;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <i data-lucide="package-search" style="width:20px; height:20px; color:var(--color-accent);"></i>
+          <h3 id="track-order-title" style="margin:0; font-family:var(--font-heading); font-size:1.35rem; text-transform:uppercase;">Lacak Pesanan</h3>
+        </div>
+        <button type="button" id="track-order-close" class="icon-button" aria-label="Tutup box lacak pesanan" style="width:32px; height:32px;">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <p style="font-size:0.86rem; color:var(--color-muted); margin:0 0 16px;">
+        Masukkan nomor pesanan dan email atau nomor HP yang Anda gunakan saat memesan.
+      </p>
+      <form id="track-order-form" method="post" action="{% url 'store:track_guest_order' %}">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:14px;">
+          <label for="track-order-number">Nomor Pesanan *</label>
+          <input id="track-order-number" name="order_number" type="text" class="form-input" placeholder="Contoh: 240005" required style="width:100%; box-sizing:border-box;">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label for="track-order-contact">Email atau No. WhatsApp *</label>
+          <input id="track-order-contact" name="contact" type="text" class="form-input" placeholder="email@contoh.com atau 08xxxxxxxxxx" required style="width:100%; box-sizing:border-box;">
+        </div>
+        <div id="track-order-error" role="alert" hidden style="padding:10px 12px; border-radius:8px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:0.84rem; margin-bottom:14px;"></div>
+        <button type="submit" id="track-order-submit" class="button button--accent" style="width:100%; min-height:46px;">
+          <i data-lucide="search" style="width:16px; height:16px;"></i>
+          <span>Lacak Sekarang</span>
+        </button>
+      </form>
+      {% if user.is_authenticated %}
+        <p style="font-size:0.78rem; color:var(--color-muted); text-align:center; margin:12px 0 0;">
+          Sudah login? Lihat semua pesanan di <a href="{% url 'accounts:orders' %}" style="color:var(--color-accent); font-weight:600;">Pesanan Saya</a>.
+        </p>
+      {% endif %}
+    </div>
+  </dialog>
+
   <!-- Toast Notification Root -->
   <div id="toast-root" aria-live="polite"></div>
 
   <!-- Main Storefront JavaScript -->
   <script src="{% static 'js/main.js' %}?v=1.2"></script>
+  <script>
+    (function () {
+      const toggleBtn = document.getElementById('track-order-toggle');
+      const modal = document.getElementById('track-order-modal');
+      const closeBtn = document.getElementById('track-order-close');
+      const form = document.getElementById('track-order-form');
+      const errBox = document.getElementById('track-order-error');
+      const submitBtn = document.getElementById('track-order-submit');
+      const numInput = document.getElementById('track-order-number');
+      if (!toggleBtn || !modal) return;
+
+      toggleBtn.addEventListener('click', function () {
+        if (errBox) { errBox.hidden = true; errBox.textContent = ''; }
+        if (typeof modal.showModal === 'function') modal.showModal();
+        else modal.setAttribute('open', '');
+        if (numInput) setTimeout(() => numInput.focus(), 50);
+      });
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          if (typeof modal.close === 'function') modal.close();
+          else modal.removeAttribute('open');
+        });
+      }
+
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal && typeof modal.close === 'function') {
+          modal.close();
+        }
+      });
+
+      if (form) {
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          if (errBox) { errBox.hidden = true; errBox.innerHTML = ''; }
+          const labelSpan = submitBtn ? submitBtn.querySelector('span') : null;
+          if (submitBtn) submitBtn.disabled = true;
+          if (labelSpan) labelSpan.textContent = 'Mencari...';
+
+          try {
+            const res = await fetch(form.action, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              body: new FormData(form),
+            });
+            const data = await res.json();
+            if (res.ok && data.ok && data.redirect_url) {
+              window.location.href = data.redirect_url;
+              return;
+            }
+            if (errBox) {
+              errBox.textContent = data.error || 'Pesanan tidak ditemukan.';
+              if (data.login_url) {
+                const a = document.createElement('a');
+                a.href = data.login_url;
+                a.textContent = ' Login di sini';
+                a.style.fontWeight = '700';
+                a.style.textDecoration = 'underline';
+                a.style.color = '#b91c1c';
+                errBox.appendChild(a);
+              }
+              errBox.hidden = false;
+            }
+          } catch (err) {
+            form.submit();
+            return;
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+            if (labelSpan) labelSpan.textContent = 'Lacak Sekarang';
+          }
+        });
+      }
+    })();
+  </script>
   <script>
     window.updateCartDrawerUI = function (data) {
       const navCount = document.getElementById('nav-cart-count');

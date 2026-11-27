@@ -20,6 +20,7 @@ urlpatterns = [
     # Guest Checkout (tanpa login — transaksi pertama saja)
     path('beli/<slug:slug>/', views.guest_checkout, name='guest_checkout'),
     path('pesanan/tamu/<str:token>/', views.guest_order_detail, name='guest_order_detail'),
+    path('lacak-pesanan/', views.track_guest_order, name='track_guest_order'),
 
     # Checkout & Confirmation
     path('checkout/', views.checkout, name='checkout'),

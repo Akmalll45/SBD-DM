@@ -950,6 +950,55 @@ def guest_order_detail(request, token):
     })
 
 
+@require_POST
+def track_guest_order(request):
+    """
+    Lacak pesanan tamu melalui box modal di navbar berdasarkan Nomor Pesanan + Email/No. HP.
+    Mendukung AJAX JSON maupun POST biasa.
+    """
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    order_raw = (request.POST.get('order_number') or '').strip().lstrip('#').strip()
+    contact_raw = (request.POST.get('contact') or '').strip()
+
+    def _fail(msg, status=400, login_url=None):
+        if is_ajax:
+            payload = {'ok': False, 'error': msg}
+            if login_url:
+                payload['login_url'] = login_url
+            return JsonResponse(payload, status=status)
+        messages.error(request, msg)
+        return redirect(request.META.get('HTTP_REFERER') or reverse('store:home'))
+
+    if not order_raw.isdigit() or not contact_raw:
+        return _fail('Masukkan nomor pesanan (angka) dan email atau nomor HP yang digunakan.')
+
+    order = Order.objects.filter(pk=int(order_raw)).first()
+    if not order:
+        return _fail(f'Pesanan #{order_raw} tidak ditemukan. Periksa kembali nomor pesanan Anda.', status=404)
+
+    if not order.is_guest_order:
+        login_target = f"{reverse('store:login')}?next={reverse('accounts:order_detail', kwargs={'order_id': order.pk})}"
+        return _fail(
+            f'Pesanan #{order.pk} terdaftar menggunakan akun member. Silakan login untuk melihat statusnya.',
+            status=403,
+            login_url=login_target,
+        )
+
+    # Cocokkan email (case-insensitive) atau nomor telepon (abaikan spasi/tanda hubung)
+    contact_digits = ''.join(ch for ch in contact_raw if ch.isdigit())
+    order_phone_digits = ''.join(ch for ch in (order.phone or '') if ch.isdigit())
+    email_match = bool(order.guest_email and order.guest_email.lower() == contact_raw.lower())
+    phone_match = bool(contact_digits and order_phone_digits and contact_digits == order_phone_digits)
+
+    if not (email_match or phone_match):
+        return _fail('Email atau nomor HP tidak cocok dengan data pesanan tersebut.', status=403)
+
+    target_url = reverse('store:guest_order_detail', kwargs={'token': order.guest_token})
+    if is_ajax:
+        return JsonResponse({'ok': True, 'redirect_url': target_url})
+    return redirect(target_url)
+
+
 @login_required(login_url='store:login')
 def checkout(request):
     cart, _ = Cart.objects.get_or_create(user=request.user)
