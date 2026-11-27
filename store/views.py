@@ -562,18 +562,30 @@ def update_cart_item(request, item_id):
     return redirect('store:cart')
 
 
-@login_required(login_url='store:login')
 def remove_cart_item(request, item_id):
     """
     Remove item from cart entirely.
-    POST: hapus item. GET: redirect ke cart (fallback aman jika CSRF/redirect loop).
+    POST (AJAX): hapus item, kembalikan JSON payload keranjang terbaru.
+    POST (non-AJAX): hapus item, redirect ke cart.
+    GET: redirect ke cart (safe fallback).
+    Unauthenticated AJAX: kembalikan JSON 401 agar JS bisa handle gracefully.
     """
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if not request.user.is_authenticated:
+        if is_ajax:
+            return JsonResponse(
+                {'error': 'login_required', 'login_url': reverse('store:login')},
+                status=401,
+            )
+        return redirect(f"{reverse('store:login')}?next={request.path}")
+
     cart = get_object_or_404(Cart, user=request.user)
 
     if request.method == 'POST':
         item = get_object_or_404(CartItem, id=item_id, cart=cart)
         item.delete()
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if is_ajax:
             return JsonResponse(_cart_ajax_payload(request, cart, 'Produk dihapus dari keranjang.'))
         messages.info(request, 'Produk dihapus dari keranjang.')
 

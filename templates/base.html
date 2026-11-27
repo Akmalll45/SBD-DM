@@ -255,23 +255,44 @@
           btn.disabled = true;
           btn.textContent = 'Menghapus...';
         }
+        // Ambil CSRF token dari cookie agar berfungsi di semua environment
+        function getCookie(name) {
+          const val = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+          return val ? decodeURIComponent(val.split('=')[1]) : null;
+        }
+        const csrfToken = getCookie('csrftoken') || (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
         try {
           const res = await fetch(form.action, {
             method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRFToken': csrfToken,
+            },
             body: new FormData(form),
           });
-          if (res.ok) {
-            const data = await res.json();
-            window.updateCartDrawerUI(data);
-            if (window.showToast && data.message) {
-              window.showToast(data.message, 'info');
-            }
-          } else {
-            form.submit();
+          // Jika server redirect ke login atau response error
+          if (res.redirected || !res.ok) {
+            window.location.href = "{% url 'store:cart' %}";
+            return;
+          }
+          const contentType = res.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            window.location.href = "{% url 'store:cart' %}";
+            return;
+          }
+          const data = await res.json();
+          if (data.error === 'login_required') {
+            window.location.href = data.login_url || "{% url 'store:login' %}";
+            return;
+          }
+          window.updateCartDrawerUI(data);
+          if (window.showToast && data.message) {
+            window.showToast(data.message, 'info');
           }
         } catch (err) {
-          form.submit();
+          // Fallback: navigasi ke halaman cart
+          window.location.href = "{% url 'store:cart' %}";
         }
       });
     })();
